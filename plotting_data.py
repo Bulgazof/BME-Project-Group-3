@@ -193,7 +193,7 @@ def max_block_power(df, name):
 
 
 def run():
-    df_pelvis = load_data(r'../BME-Project-Group-3/data/pelvis.csv')
+    df_pelvis = load_data(r'../BME-Project-Group-3/data/pelvis_test.csv')
     df_tibia = load_data(r'../BME-Project-Group-3/data/tibia.csv')
     df_pelvis_slow = load_data(r'../BME-Project-Group-3/data/pelvis_slow.csv')
     df_tibia_slow = load_data(r'../BME-Project-Group-3/data/tibia_slow.csv')
@@ -202,7 +202,7 @@ def run():
 
     df_tibia = calc_norm(df_tibia, acc_var_names, 'norm')
     df_tibia_slow = calc_norm(df_tibia_slow, acc_var_names, 'norm')
-    # plot_multiple_stack([df_pelvis, df_pelvis_slow], acc_var_names, 'all values')
+    plot_multiple_stack([df_pelvis, df_pelvis_slow], acc_var_names, 'all values')
     # plot_multiple_stack([df_tibia, df_tibia_slow], acc_var_names, 'all values')
 
     plot_power([df_pelvis], speed_var_names, acc_var_names, ['power', 'acc_y'],

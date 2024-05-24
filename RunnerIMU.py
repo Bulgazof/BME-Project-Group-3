@@ -2,20 +2,23 @@ import numpy as np
 from pynput.keyboard import Key, Listener
 import threading
 import csv
+from scipy.signal import find_peaks
 from CreaTeBME import SensorManager
 
-
-class RunnerIMU:
+class SensorDataHandler:
     FREQUENCY = 60
     BUFFER_SIZE = FREQUENCY * 5
 
-    def __init__(self, pelvis_sensor, tibia_sensor):
+    def __init__(self, pelvis_sensor, tibia_sensor, duration, steps):
         self.SENSORS_NAMES = [pelvis_sensor, tibia_sensor]
         self.manager = SensorManager(self.SENSORS_NAMES)
         self.manager.set_sample_rate(self.FREQUENCY)
         self.manager.start()
         self.running = False
+        self.step_num = steps
+        self.record_duration = duration
         self.thread = None
+        self.stop_event = threading.Event()
         self.t_stamp = {name: np.array([0.0]) for name in self.SENSORS_NAMES}
         self.acc = {name: np.empty((0, 3)) for name in self.SENSORS_NAMES}
         self.gyr = {name: np.empty((0, 3)) for name in self.SENSORS_NAMES}
@@ -34,38 +37,51 @@ class RunnerIMU:
                 self.gyr[name] = np.vstack((self.gyr[name][-self.BUFFER_SIZE:], element[3:6]))
                 self.t_stamp[name] = np.append(self.t_stamp[name][-self.BUFFER_SIZE:], new_timestamp)
 
-    def save_to_csv(self, sensor_name, file_path):
-        header = ["acc_x", "acc_y", "acc_z", "gyr_x", "gyr_y", "gyr_z", "timestamp"]
+    def detect_peaks(self, accel, time, threshold, min_distance):
+        stride_peaks, _ = find_peaks(accel, height=threshold, distance=min_distance)
+        peak_times = time[stride_peaks]
+        distances = np.diff(peak_times)
+        print(peak_times)
+        return peak_times
+
+    def save_to_csv(self, sensor_name, file_path, peaks):
+        desired_peak = peaks[self.step_num]
+        num_rows_to_save = int(desired_peak * self.FREQUENCY)
+
         with open(file_path, mode='w', newline='') as file:
             writer = csv.writer(file)
-            writer.writerow(header)
-            for row in self.data[sensor_name]:
+            for row in self.data[sensor_name][:num_rows_to_save]:
                 writer.writerow(row)
 
-    def run_functions(self):
-        while self.running:
-            self.update_measurements()
-            self.save_to_csv(self.SENSORS_NAMES[0], 'data/pelvis_test.csv')
-            self.save_to_csv(self.SENSORS_NAMES[1], 'data/tibia_test.csv')
+    def run_analysis(self):
+        self.stop_event.wait(self.record_duration)
+        if not self.running:
+            return
+        print("Updating measurements and saving to CSV...")
+        self.update_measurements()
+        pelvis_y_accel = self.acc[self.SENSORS_NAMES[0]][:, 1]
+        peaks = self.detect_peaks(pelvis_y_accel, self.t_stamp[self.SENSORS_NAMES[0]], 4, 10)
+        self.save_to_csv('FD92', 'data/pelvis_test.csv', peaks)
+        self.save_to_csv('F30E', 'data/tibia_test.csv', peaks)
+        self.running = False  # Stop the function after updating and saving
 
-    def toggle_functions(self):
-        if self.running:
-            print("Recording stopped.")
-            self.running = False
-            if self.thread is not None:
-                self.thread.join()
-        else:
-            print("Recording...")
+    def record(self):
+        if not self.running:
+            print("Starting the functions...")
             self.manager._clear_queue()
             self.running = True
-            self.thread = threading.Thread(target=self.run_functions)
+            self.stop_event.clear()
+            self.thread = threading.Thread(target=self.run_analysis)
             self.thread.start()
 
     def on_press(self, key):
         if key == Key.space:
-            self.toggle_functions()
+            self.record()
 
-    def toggle_record(self):
+    def start_listener(self):
         with Listener(on_press=self.on_press) as listener:
             listener.join()
 
+if __name__ == "__main__":
+    sensor_handler = SensorDataHandler('FD92', 'F30E', 5, 10)
+    sensor_handler.start_listener()
