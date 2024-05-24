@@ -11,7 +11,11 @@ pandas = "*"
 scipy = "*"
 keyboard = "*"
 pynput = "*"
-
+pygame = "*"
+opencv-python = "*"
+mediapipe = "*"
+simpleaudio = "*"
+wxpython = "*"
 
 [dev-packages]
 
