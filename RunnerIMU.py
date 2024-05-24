@@ -5,7 +5,7 @@ import csv
 from scipy.signal import find_peaks
 from CreaTeBME import SensorManager
 
-class SensorDataHandler:
+class RunnerIMU:
     FREQUENCY = 60
     BUFFER_SIZE = FREQUENCY * 5
 
@@ -83,5 +83,5 @@ class SensorDataHandler:
             listener.join()
 
 if __name__ == "__main__":
-    sensor_handler = SensorDataHandler('FD92', 'F30E', 5, 10)
+    sensor_handler = RunnerIMU('FD92', 'F30E', 5, 10)
     sensor_handler.start_listener()
