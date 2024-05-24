@@ -103,7 +103,7 @@ def integrate_gyroscope(gyro_data, time_interval):
     orientation = np.zeros_like(gyro_data)
     angle = 0.0
     for i in range(1, len(gyro_data)):
-        angle += gyro_data[i]*180/np.pi * time_interval  # Integration step
+        angle += gyro_data[i] * 180 / np.pi * time_interval  # Integration step
         orientation[i] = angle
     return orientation
 
@@ -113,7 +113,7 @@ def add_angles(df):
     df['gyr_y_angle'] = integrate_gyroscope(df['gyr_y'], 1 / sampling_frequency)
 
     frequency = 0.05
-    b, a = signal.butter(2, 2*frequency/sampling_frequency, 'highpass', output='ba')
+    b, a = signal.butter(2, 2 * frequency / sampling_frequency, 'highpass', output='ba')
     df['hp_gyr_y_angle'] = signal.lfilter(b, a, df['gyr_y_angle'])
     return df
 
@@ -121,6 +121,7 @@ def add_angles(df):
 def complementary_angle(df, alpha):
     df['compl_y_angle'] = alpha * (df['hp_gyr_y_angle'] + 1 / sampling_frequency) + ((1 - alpha) * df['acc_y_angle'])
     return df
+
 
 #
 # def run():
@@ -144,7 +145,7 @@ def complementary_angle(df, alpha):
 
 
 def calc_force(df, mass):
-    df['force'] = df['norm']*mass
+    df['force'] = df['norm'] * mass
     return df
 
 
@@ -161,7 +162,7 @@ def integrate(data, time_interval):
 
 
 def calc_power(df):
-    df['power'] = df['vel_norm']*df['force']
+    df['power'] = df['vel_norm'] * df['force']
     return df
 
 
@@ -171,7 +172,7 @@ def plot_power(dataframe_list, speed_variables, acc_variables, plot_variables, t
         dataframe = calc_force(dataframe, runner_weight)
         dataframe = calc_norm(dataframe, speed_variables, 'vel_norm')
         dataframe = calc_power(dataframe)
-    plot_multiple_comb(dataframe_list, ['power'], 'power [W]')
+    plot_multiple_comb(dataframe_list, plot_variables, title)
 
 
 def run():
@@ -183,23 +184,13 @@ def run():
     df_pelvis_slow = calc_norm(df_pelvis_slow, acc_var_names, 'norm')
 
     df_tibia = calc_norm(df_tibia, acc_var_names, 'norm')
+    df_tibia_slow = calc_norm(df_tibia_slow, acc_var_names, 'norm')
     # plot_multiple_stack([df_pelvis, df_pelvis_slow], acc_var_names, 'all values')
     # plot_multiple_stack([df_tibia, df_tibia_slow], acc_var_names, 'all values')
-    #
-    # plot_multiple_comb([df_pelvis, df_tibia], plot_var, 'all values one stack')
-    # plot_multiple_stack([df_pelvis, df_tibia], ['norm'], 'norm acceleration')
-    # df_pelvis = calc_speed(df_pelvis, var_names, speed_var_names)
-    # df_pelvis = calc_force(df_pelvis, runner_weight)
-    # df_pelvis = calc_norm(df_pelvis, speed_var_names, 'vel_norm')
-    # df_pelvis = calc_power(df_pelvis)
-    #
-    # df_pelvis_slow = calc_speed(df_pelvis_slow, var_names, speed_var_names)
-    # df_pelvis_slow = calc_force(df_pelvis_slow, runner_weight)
-    # df_pelvis_slow = calc_norm(df_pelvis_slow, speed_var_names, 'vel_norm')
-    # df_pelvis_slow = calc_power(df_pelvis_slow)
-    plot_power([df_pelvis, df_pelvis_slow], speed_var_names, acc_var_names, ['power'], 'Power of two runs')
 
-    # plot_multiple_comb([df_pelvis, df_pelvis_slow], ['power'], 'power [W]')
+    plot_power([df_pelvis], speed_var_names, acc_var_names, ['power', 'acc_y'],
+               'Power of two runs (pelvis) + accZ')
+    # plot_power([df_tibia, df_tibia_slow], speed_var_names, acc_var_names, ['power'], 'power of two runs (tibia)')
 
 
 if __name__ == "__main__":
