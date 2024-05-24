@@ -175,6 +175,23 @@ def plot_power(dataframe_list, speed_variables, acc_variables, plot_variables, t
     plot_multiple_comb(dataframe_list, plot_variables, title)
 
 
+def detect_first_peak(accel, threshold, min_distance):
+    peaks, _ = find_peaks(accel, height=threshold, distance=min_distance)
+    if len(peaks) > 0:
+        return peaks[0]
+    else:
+        return None
+
+
+def max_block_power(df, name):
+    first_peak_index = detect_first_peak(df['acc_y'], 4, 10)
+    if first_peak_index is not None:
+        max_power_up_to_peak = df['power'][:first_peak_index - 3].max()
+        print(f"Maximum power out of the blocks {name}: {max_power_up_to_peak} Watt")
+    else:
+        print("Something went wrong")
+
+
 def run():
     df_pelvis = load_data(r'../BME-Project-Group-3/data/pelvis.csv')
     df_tibia = load_data(r'../BME-Project-Group-3/data/tibia.csv')
@@ -190,7 +207,12 @@ def run():
 
     plot_power([df_pelvis], speed_var_names, acc_var_names, ['power', 'acc_y'],
                'Power of two runs (pelvis) + accZ')
+    plot_power([df_pelvis_slow], speed_var_names, acc_var_names, ['power', 'acc_y'],
+               'Power of two runs (pelvis) + accZ')
     # plot_power([df_tibia, df_tibia_slow], speed_var_names, acc_var_names, ['power'], 'power of two runs (tibia)')
+    max_block_power(df_pelvis, 'fast run')
+    max_block_power(df_pelvis_slow, 'slow run')
+
 
 
 if __name__ == "__main__":
