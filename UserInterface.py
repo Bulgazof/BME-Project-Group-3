@@ -59,7 +59,7 @@ def process_data_for_plotting(dataframe_list, speed_variables, acc_variables):
 
 class MainFrame(wx.Frame):
     def __init__(self, *args, **kw):
-        super(MainFrame, self).__init__(*args, **kw)
+        super(MainFrame, self).__init__(*args, **kw, size=(1200, 800))  # Set the window size here
         self.InitUI()
 
     def InitUI(self):
@@ -73,7 +73,7 @@ class MainFrame(wx.Frame):
 
         # Values to display
         self.values = {
-            'Key Frames': 'Key Frames',
+            'Start Run': 'Start Run',
             'Stride Frequency': 'Stride Frequency',
             'Power': 'Power',
             'Acceleration': 'Acceleration',
@@ -88,15 +88,15 @@ class MainFrame(wx.Frame):
     def create_widgets(self, panel):
         # Create and add widgets to sizer
         for label, value in self.values.items():
-            if label in ['Stride Frequency', 'Key Frames', 'Power', 'Acceleration']:
+            if label in ['Stride Frequency', 'Start Run', 'Power', 'Acceleration']:
                 display_label = f'{label}'
                 btn = wx.Button(panel, label=display_label, size=(150, 50))
                 btn.SetFont(wx.Font(20, wx.DEFAULT, wx.NORMAL, wx.BOLD))
                 btn.SetBackgroundColour(wx.Colour(230, 230, 250))
                 if label == 'Stride Frequency':
                     btn.Bind(wx.EVT_BUTTON, self.on_stride_frequency)
-                elif label == 'Key Frames':
-                    btn.Bind(wx.EVT_BUTTON, self.on_key_frames)
+                elif label == 'Start Run':
+                    btn.Bind(wx.EVT_BUTTON, self.on_start)
                 elif label == 'Power':
                     btn.Bind(wx.EVT_BUTTON, self.on_power)
                 elif label == 'Acceleration':
@@ -139,11 +139,20 @@ class MainFrame(wx.Frame):
         self.Hide()
         acceleration_frame = AccelerationFrame(None, title="Acceleration Data", dataframes=[df_pelvis, df_pelvis_slow])
         acceleration_frame.Show()
+    def on_start(self, event):
+        df_pelvis = load_data(r'../BME-Project-Group-3/data/pelvis_test.csv')
+        df_pelvis_slow = load_data(r'../BME-Project-Group-3/data/pelvis_slow.csv')
 
+        df_pelvis = calc_norm(df_pelvis, acc_var_names, 'norm')
+        df_pelvis_slow = calc_norm(df_pelvis_slow, acc_var_names, 'norm')
+
+        self.Hide()
+        acceleration_frame = AccelerationFrame(None, title="Acceleration Data", dataframes=[df_pelvis, df_pelvis_slow])
+        acceleration_frame.Show()
 
 class PowerFrame(wx.Frame):
     def __init__(self, *args, dataframes=None, **kw):
-        super(PowerFrame, self).__init__(*args, **kw)
+        super(PowerFrame, self).__init__(*args, **kw, size=(1200, 800))  # Set the window size here
         self.dataframes = dataframes
         self.InitUI()
 
@@ -174,10 +183,11 @@ class PowerFrame(wx.Frame):
         data1 = [(row['timestamp'], row['power']) for _, row in self.dataframes[0].iterrows()]
         data2 = [(row['timestamp'], row['power']) for _, row in self.dataframes[1].iterrows()]
 
-        power_data1 = wxplot.PolyLine(data1, colour='blue', legend='Power Run 1')
-        power_data2 = wxplot.PolyLine(data2, colour='red', legend='Power Run 2')
+        power_data1 = wxplot.PolyLine(data1, colour='blue', legend='Run 1')
+        power_data2 = wxplot.PolyLine(data2, colour='red', legend='Run 2')
 
         graphics = wxplot.PlotGraphics([power_data1, power_data2], "Power Data", "Time", "Power")
+        self.canvas.SetEnableLegend(True)
         self.canvas.Draw(graphics)
 
     def on_back(self, event):
@@ -188,7 +198,7 @@ class PowerFrame(wx.Frame):
 
 class AccelerationFrame(wx.Frame):
     def __init__(self, *args, dataframes=None, **kw):
-        super(AccelerationFrame, self).__init__(*args, **kw)
+        super(AccelerationFrame, self).__init__(*args, **kw, size=(1200, 800))  # Set the window size here
         self.dataframes = dataframes
         self.InitUI()
 
@@ -219,10 +229,12 @@ class AccelerationFrame(wx.Frame):
         data1 = [(row['timestamp'], row['acc_y']) for _, row in self.dataframes[0].iterrows()]
         data2 = [(row['timestamp'], row['acc_y']) for _, row in self.dataframes[1].iterrows()]
 
-        acc_data1 = wxplot.PolyLine(data1, colour='blue', legend='Acceleration Run 1')
-        acc_data2 = wxplot.PolyLine(data2, colour='red', legend='Acceleration Run 2')
+        acc_data1 = wxplot.PolyLine(data1, colour='blue', legend='Run 1')
+        acc_data2 = wxplot.PolyLine(data2, colour='red', legend='Run 2')
 
         graphics = wxplot.PlotGraphics([acc_data1, acc_data2], "Acceleration Data", "Time", "Acceleration")
+
+        self.canvas.SetEnableLegend(True)
         self.canvas.Draw(graphics)
 
     def on_back(self, event):
