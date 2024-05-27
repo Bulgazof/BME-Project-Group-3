@@ -50,17 +50,18 @@ class TonePlayer:
         while True:
             # The normal beeps for while leaning over
             if self.current_step < len(self.step_interval):
-                try:
-                    elapsed_time = time.time() - self.last_play_time
-                    if elapsed_time >= self.step_interval[self.current_step]: # Index over one
-                        self.play_tone()
-                except Exception as e:
-                    print(f"Error in play_loop: {e}")
+                elapsed_time = time.time() - self.last_play_time
+                if elapsed_time >= self.step_interval[self.current_step]: # Index over one
+                    self.play_tone()
+                else:
+                    time.sleep(0.01)
             elif self.beep_triple < 3:
                 # Beeps thrice once out of the initial stage
                 self.base_pitch = 880
                 self.play_tone()
                 self.beep_triple += 1
+            else:
+                time.sleep(0.01)
 
     def start(self):
         """
