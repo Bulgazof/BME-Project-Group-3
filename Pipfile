@@ -14,7 +14,7 @@ pynput = "*"
 pygame = "*"
 opencv-python = "*"
 mediapipe = "*"
-simpleaudio = "*"
+sounddevice = "*"
 wxpython = "*"
 
 [dev-packages]

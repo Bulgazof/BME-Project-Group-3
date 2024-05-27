@@ -18,6 +18,7 @@ class TonePlayer:
         self.last_play_time = time.time()
         self.step_interval = []
         self.base_pitch = 440
+        self.beep_triple = 0
 
     def play_tone(self):
         """
@@ -34,8 +35,6 @@ class TonePlayer:
             self.last_play_time = time.time()
             self.current_step += 1
 
-            if self.current_step >= len(self.step_interval):
-                self.current_step = 0  # Reset step counter
         except Exception as e:
             print(f"Error in play_tone: {e}")
 
@@ -45,12 +44,19 @@ class TonePlayer:
         :return:
         """
         while True:
-            try:
-                elapsed_time = time.time() - self.last_play_time
-                if elapsed_time >= self.step_interval[self.current_step]:
-                    self.play_tone()
-            except Exception as e:
-                print(f"Error in play_loop: {e}")
+            # The normal beeps for while leaning over
+            if self.current_step < len(self.step_interval):
+                try:
+                    elapsed_time = time.time() - self.last_play_time
+                    if elapsed_time >= self.step_interval[self.current_step]: # Index over one
+                        self.play_tone()
+                except Exception as e:
+                    print(f"Error in play_loop: {e}")
+            elif self.beep_triple <3:
+                # Beeps thrice once out of the initial stage
+                self.base_pitch = 880
+                self.play_tone()
+                self.beep_triple += 1
 
     def detect_peaks(self, csv, threshold=4, min_distance=10):
         """
