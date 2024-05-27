@@ -14,6 +14,9 @@ from RingBuffer import RingBuffer
 start_time = time.time()  # Get the current time
 condition_met = False  # Initialize the condition flag
 current_time = 0.0
+frame = 0
+display_FPS = 5
+prev_time = time.time()
 
 # Initialize MediaPipe Pose and drawing utilities
 mp_drawing = mp.solutions.drawing_utils
@@ -68,24 +71,26 @@ with mp_pose.Pose(model_complexity=1, min_detection_confidence=0.5, min_tracking
         results = pose.process(image)
 
         # Convert the image back to BGR for OpenCV
-        image.flags.writeable = True
-        image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+        # image.flags.writeable = True
+        # image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
 
         # Draw pose landmarks on the image
         if results.pose_landmarks:
-            mp_drawing.draw_landmarks(
-                image,
-                results.pose_landmarks,
-                mp_pose.POSE_CONNECTIONS,
-                landmark_drawing_spec=mp_drawing_styles.get_default_pose_landmarks_style()
-            )
+            # mp_drawing.draw_landmarks(
+            #     image,
+            #     results.pose_landmarks,
+            #     mp_pose.POSE_CONNECTIONS,
+            #     landmark_drawing_spec=mp_drawing_styles.get_default_pose_landmarks_style()
+            # )
 
             # Get the landmarks
             lm_arr = results.pose_landmarks.landmark
 
+            # image = np.zeros_like(image)
+
             # Calculate angles
             chest_angle = angle_calculator.get_angle(lm_arr, "chest", True)
-
+            print(chest_angle)
             # Draw vector for right shin angle
             height, width, _ = image.shape
             zero_vector = (int(width / 2), int(height / 2))  # Center of the screen
@@ -105,7 +110,9 @@ with mp_pose.Pose(model_complexity=1, min_detection_confidence=0.5, min_tracking
         output_video.write(image)
 
         # Display the image
-        cv2.imshow('MediaPipe Pose', cv2.flip(image, 1))
+        if prev_time + 1/display_FPS < time.time():
+            cv2.imshow('MediaPipe Pose', cv2.flip(image, 1))
+            prev_time = time.time()
 
         # Break the loop on 'ESC' key press
         if cv2.waitKey(5) & 0xFF == 27:
