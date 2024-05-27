@@ -156,5 +156,5 @@ class MyApp(wx.App):
         input_frame.Show(True)
         return True
 
-app = MyApp()
-app.MainLoop()
+# app = MyApp()
+# app.MainLoop()

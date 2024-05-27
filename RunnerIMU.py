@@ -1,9 +1,9 @@
 import numpy as np
 from pynput.keyboard import Key, Listener
-import threading
 import csv
 from scipy.signal import find_peaks
 from CreaTeBME import SensorManager
+import time
 
 class RunnerIMU:
     FREQUENCY = 60
@@ -17,8 +17,6 @@ class RunnerIMU:
         self.running = False
         self.step_num = steps
         self.record_duration = duration
-        self.thread = None
-        self.stop_event = threading.Event()
         self.t_stamp = {name: np.array([0.0]) for name in self.SENSORS_NAMES}
         self.acc = {name: np.empty((0, 3)) for name in self.SENSORS_NAMES}
         self.gyr = {name: np.empty((0, 3)) for name in self.SENSORS_NAMES}
@@ -54,7 +52,7 @@ class RunnerIMU:
                 writer.writerow(row)
 
     def run_analysis(self):
-        self.stop_event.wait(self.record_duration)
+        time.sleep(self.record_duration)
         if not self.running:
             return
         print("Updating measurements and saving to CSV...")
@@ -70,9 +68,7 @@ class RunnerIMU:
             print("Starting the functions...")
             self.manager._clear_queue()
             self.running = True
-            self.stop_event.clear()
-            self.thread = threading.Thread(target=self.run_analysis)
-            self.thread.start()
+            self.run_analysis()
 
     def on_press(self, key):
         if key == Key.space:
@@ -81,6 +77,7 @@ class RunnerIMU:
     def start_listener(self):
         with Listener(on_press=self.on_press) as listener:
             listener.join()
+
 
 if __name__ == "__main__":
     sensor_handler = RunnerIMU('FD92', 'F30E', 5, 10)

@@ -2,15 +2,14 @@ import threading
 import time
 from UserInterface import *
 from AudioFiles import *
-
-def update_windows():
-    while True:
-        print("test2")
+from RunnerIMU import RunnerIMU
 
 
-print("test1")
+# Initialize the and connect to sensors
 
-app = MyApp()
-threading.Thread(target=update_windows).start()
+if __name__ == "__main__":
+    sensor_handler = RunnerIMU('FD92', 'F30E', 5, 10)
+    sensor_handler.start_listener()
 
-app.MainLoop()
+
+
