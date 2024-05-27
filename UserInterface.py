@@ -139,17 +139,32 @@ class MainFrame(wx.Frame):
         self.Hide()
         acceleration_frame = AccelerationFrame(None, title="Acceleration Data", dataframes=[df_pelvis, df_pelvis_slow])
         acceleration_frame.Show()
+
     def on_start(self, event):
-        df_pelvis = load_data(r'../BME-Project-Group-3/data/pelvis_test.csv')
-        df_pelvis_slow = load_data(r'../BME-Project-Group-3/data/pelvis_slow.csv')
-
-        df_pelvis = calc_norm(df_pelvis, acc_var_names, 'norm')
-        df_pelvis_slow = calc_norm(df_pelvis_slow, acc_var_names, 'norm')
-
         self.Hide()
-        acceleration_frame = AccelerationFrame(None, title="Acceleration Data", dataframes=[df_pelvis, df_pelvis_slow])
-        acceleration_frame.Show()
+        start_frame = StartFrame(None, title="Start Run")
+        start_frame.Show()
 
+class StartFrame(wx.Frame):
+    def __init__(self, *args, **kw):
+        super(StartFrame, self).__init__(*args, **kw, size=(1200, 800))
+
+        panel = wx.Panel(self)
+        vbox = wx.BoxSizer(wx.VERTICAL)
+
+        end_run_btn = wx.Button(panel, label="End Run",size=(500, 500))
+        end_run_btn.SetFont(wx.Font(20, wx.DEFAULT, wx.NORMAL, wx.BOLD))
+
+        end_run_btn.Bind(wx.EVT_BUTTON, self.on_end_run)
+
+        vbox.Add(end_run_btn, 0, wx.ALIGN_CENTER | wx.ALL, 5)
+
+        panel.SetSizer(vbox)
+
+    def on_end_run(self, event):
+        self.Hide()
+        main_frame = MainFrame(None, title="Sensor Data Analysis")
+        main_frame.Show()
 class PowerFrame(wx.Frame):
     def __init__(self, *args, dataframes=None, **kw):
         super(PowerFrame, self).__init__(*args, **kw, size=(1200, 800))  # Set the window size here
@@ -225,7 +240,7 @@ class AccelerationFrame(wx.Frame):
         self.Centre()
 
     def plot_graph(self):
-        # Plot acceleration graph :)
+        # Plot acceleration graph
         data1 = [(row['timestamp'], row['acc_y']) for _, row in self.dataframes[0].iterrows()]
         data2 = [(row['timestamp'], row['acc_y']) for _, row in self.dataframes[1].iterrows()]
 
