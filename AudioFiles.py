@@ -10,7 +10,7 @@ class TonePlayer:
     This class is used for the generation of tones when the user is running, giving audio feedback.
     """
 
-    def __init__(self,data,base_pitch = 440, sample_rate=44100):
+    def __init__(self,data, base_pitch = 440, sample_rate=44100):
         """
         Initializes the TonePlayer with the desired sample rate.
         """
@@ -22,7 +22,6 @@ class TonePlayer:
         self.beep_triple = 0
         self.thread = None
         self.data = data
-
         self.detect_peaks()
 
     def play_tone(self):
@@ -72,7 +71,7 @@ class TonePlayer:
             self.thread.daemon = True  # Ensure the thread exits when the main program does
             self.thread.start()
 
-    def detect_peaks(self, threshold=4, min_distance=10):
+    def detect_peaks(self,threshold=4, min_distance=10):
         """
         Detect peaks and set step intervals.
         :param csv: string path to the csv file
@@ -89,4 +88,3 @@ class TonePlayer:
         else:
             distances = self.data
         self.step_interval = distances
-

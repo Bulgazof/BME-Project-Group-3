@@ -8,6 +8,7 @@ import csv
 import os
 
 from angleCalculator import angleCalculator
+from AudioFiles import TonePlayer
 from RingBuffer import RingBuffer
 
 # Initialize variables
@@ -17,6 +18,11 @@ current_time = 0.0
 frame = 0
 display_FPS = 5
 prev_time = time.time()
+
+# Put before while loop
+player_1 = TonePlayer([2, 2, 2, 2, 2, 2, 2, 2, 2, 1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3],440)
+player_1.start()
+
 
 # Initialize MediaPipe Pose and drawing utilities
 mp_drawing = mp.solutions.drawing_utils
@@ -91,6 +97,7 @@ with mp_pose.Pose(model_complexity=1, min_detection_confidence=0.5, min_tracking
             # Calculate angles
             chest_angle = angle_calculator.get_angle(lm_arr, "chest", True)
             print(chest_angle)
+            player_1.base_pitch = 440 + (chest_angle - 1) * 80
             # Draw vector for right shin angle
             height, width, _ = image.shape
             zero_vector = (int(width / 2), int(height / 2))  # Center of the screen
