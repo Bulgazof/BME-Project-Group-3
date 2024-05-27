@@ -16,8 +16,10 @@ start_time = time.time()  # Get the current time
 condition_met = False  # Initialize the condition flag
 current_time = 0.0
 frame = 0
-display_FPS = 5
+display_FPS = 0.5
 prev_time = time.time()
+cum_frame_time = 0
+prev_frame_time = time.time()
 
 # Put before while loop
 player_1 = TonePlayer([2, 2, 2, 2, 2, 2, 2, 2, 2, 1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3],440)
@@ -76,6 +78,11 @@ with mp_pose.Pose(model_complexity=1, min_detection_confidence=0.5, min_tracking
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         results = pose.process(image)
 
+        frame += 1
+        cum_frame_time += 1/(time.time() - prev_frame_time)
+        print(1/(time.time() - prev_frame_time))
+        prev_frame_time = time.time()
+
         # Convert the image back to BGR for OpenCV
         # image.flags.writeable = True
         # image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
@@ -123,6 +130,7 @@ with mp_pose.Pose(model_complexity=1, min_detection_confidence=0.5, min_tracking
 
         # Break the loop on 'ESC' key press
         if cv2.waitKey(5) & 0xFF == 27:
+            print(f"Average Frame Rate: {cum_frame_time/frame}")
             break
 
 # Release resources
