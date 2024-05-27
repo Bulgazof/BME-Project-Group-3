@@ -35,7 +35,7 @@ class angleCalculator:
                 result = self.three_point_angle(lm_array, 26, 24, 12)
         if buffer:
             self.angleBuffer.add(result)
-            result = self.angleBuffer.median()
+            result = self.angleBuffer.mean()
             return result
         else:
             return result

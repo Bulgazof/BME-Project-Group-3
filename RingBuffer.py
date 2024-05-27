@@ -26,6 +26,10 @@ class RingBuffer:
             else:
                 return (sorted_data[n // 2 - 1] + sorted_data[n // 2]) / 2
 
+        def mean(self):
+            """ Return the mean of the elements in the buffer. """
+            return np.mean(self.data)
+
     def add(self, x):
         """ Add an element at the end of the buffer """
         self.data.append(x)
@@ -47,3 +51,7 @@ class RingBuffer:
             return sorted_data[n // 2]
         else:
             return (sorted_data[n // 2 - 1] + sorted_data[n // 2]) / 2
+
+    def mean(self):
+        """ Return the mean of the elements in the buffer. """
+        return np.mean(self.data)
