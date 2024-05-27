@@ -6,8 +6,8 @@ import time
 import math
 import csv
 import os
-
 from angleCalculator import angleCalculator
+from AudioFiles import TonePlayer
 from RingBuffer import RingBuffer
 
 # Initialize variables
@@ -31,7 +31,7 @@ cap = cv2.VideoCapture(0)
 angle_calculator = angleCalculator()
 
 # Function to save landmark array to a CSV file
-def save_landmarks_to_csv(lm_arr, filename="C:/Users/othoe/PycharmProjects/SprintMeister/landmarks.csv"):
+def save_landmarks_to_csv(lm_arr, filename="data/landmarks.csv"):
     # Check if the file exists
     file_exists = os.path.exists(filename)
 
@@ -56,6 +56,13 @@ def save_landmarks_to_csv(lm_arr, filename="C:/Users/othoe/PycharmProjects/Sprin
 output_filename = 'C:/Users/othoe/PycharmProjects/SprintMeister/output_video.mp4'
 fourcc = cv2.VideoWriter_fourcc(*'mp4v')
 output_video = cv2.VideoWriter(output_filename, fourcc, 20.0, (640, 480))
+
+
+# Create Tone player
+player = TonePlayer([1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3],440)
+player.detect_peaks([1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3])
+# player.detect_peaks(".././data/pelvis_slow_labels.csv")
+player.start()
 
 # Start MediaPipe Pose estimation
 with mp_pose.Pose(model_complexity=1, min_detection_confidence=0.5, min_tracking_confidence=0.5) as pose:
@@ -102,9 +109,12 @@ with mp_pose.Pose(model_complexity=1, min_detection_confidence=0.5, min_tracking
 
             # Draw a horizontal line on the screen
             image = cv2.line(image, (zero_vector[0] + 100, zero_vector[1]), (int(width / 2) - 100, int(height / 2)), (0, 0, 255), 5)
-
             # Save landmarks to CSV
             save_landmarks_to_csv(lm_arr)
+
+            # Augment Pitch
+            player.base_pitch = 480 - (chest_angle - 1) * 80
+
 
         # Write frame to output video
         output_video.write(image)
