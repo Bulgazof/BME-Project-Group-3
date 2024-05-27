@@ -3,10 +3,11 @@ import sounddevice as sd
 import time
 import pandas as pd
 from scipy.signal import find_peaks
+import threading
 
 class TonePlayer:
     """
-    This class manages sound playback based on time intervals and frequencies.
+    This class is used for the generation of tones when the user is running, giving audio feedback.
     """
 
     def __init__(self, sample_rate=44100):
@@ -18,6 +19,8 @@ class TonePlayer:
         self.last_play_time = time.time()
         self.step_interval = []
         self.base_pitch = 440
+        self.beep_triple = 0
+        self.thread = None
 
     def play_tone(self):
         """
@@ -34,8 +37,6 @@ class TonePlayer:
             self.last_play_time = time.time()
             self.current_step += 1
 
-            if self.current_step >= len(self.step_interval):
-                self.current_step = 0  # Reset step counter
         except Exception as e:
             print(f"Error in play_tone: {e}")
 
@@ -45,25 +46,44 @@ class TonePlayer:
         :return:
         """
         while True:
-            try:
-                elapsed_time = time.time() - self.last_play_time
-                if elapsed_time >= self.step_interval[self.current_step]:
-                    self.play_tone()
-            except Exception as e:
-                print(f"Error in play_loop: {e}")
+            # The normal beeps for while leaning over
+            if self.current_step < len(self.step_interval):
+                try:
+                    elapsed_time = time.time() - self.last_play_time
+                    if elapsed_time >= self.step_interval[self.current_step]: # Index over one
+                        self.play_tone()
+                except Exception as e:
+                    print(f"Error in play_loop: {e}")
+            elif self.beep_triple < 3:
+                # Beeps thrice once out of the initial stage
+                self.base_pitch = 880
+                self.play_tone()
+                self.beep_triple += 1
+
+    def start(self):
+        """
+        Threading version of the sound player
+        """
+        if self.thread is None or not self.thread.is_alive():
+            self.thread = threading.Thread(target=self.play_loop)
+            self.thread.daemon = True  # Ensure the thread exits when the main program does
+            self.thread.start()
 
     def detect_peaks(self, csv, threshold=4, min_distance=10):
         """
+        Detect peaks and set step intervals.
         :param csv: string path to the csv file
         :param threshold: threshold to activate peak
-        :param min_distance: distance between peeks for denoising
-        :return: step intervals to the class
+        :param min_distance: distance between peaks for denoising
         """
-        run = pd.read_csv(csv)
-        accel = run['acc_y']
-        time = run['timestamp']
-        stride_peaks, _ = find_peaks(accel, height=threshold, distance=min_distance)
-        peak_times = time.loc[stride_peaks]
-        distances = np.diff(peak_times)
+        if type(csv) == str:
+            run = pd.read_csv(csv)
+            accel = run['acc_y']
+            time = run['timestamp']
+            stride_peaks, _ = find_peaks(accel, height=threshold, distance=min_distance)
+            peak_times = time.loc[stride_peaks]
+            distances = np.diff(peak_times)
+        else:
+            distances = csv
         self.step_interval = distances
 
