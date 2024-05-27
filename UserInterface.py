@@ -225,7 +225,7 @@ class AccelerationFrame(wx.Frame):
         self.Centre()
 
     def plot_graph(self):
-        # Plot acceleration graph
+        # Plot acceleration graph :)
         data1 = [(row['timestamp'], row['acc_y']) for _, row in self.dataframes[0].iterrows()]
         data2 = [(row['timestamp'], row['acc_y']) for _, row in self.dataframes[1].iterrows()]
 
