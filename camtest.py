@@ -39,7 +39,7 @@ cap = cv2.VideoCapture(0)
 angle_calculator = angleCalculator()
 
 # Function to save landmark array to a CSV file
-def save_landmarks_to_csv(lm_arr, filename="C:/Users/othoe/PycharmProjects/SprintMeister/landmarks.csv"):
+def save_landmarks_to_csv(lm_arr, filename="data/landmarks.csv"):
     # Check if the file exists
     file_exists = os.path.exists(filename)
 
@@ -61,7 +61,7 @@ def save_landmarks_to_csv(lm_arr, filename="C:/Users/othoe/PycharmProjects/Sprin
 
 
 # Initialize video writer object
-output_filename = 'C:/Users/othoe/PycharmProjects/SprintMeister/output_video.mp4'
+output_filename = 'data/output_video.mp4'
 fourcc = cv2.VideoWriter_fourcc(*'mp4v')
 output_video = cv2.VideoWriter(output_filename, fourcc, 20.0, (640, 480))
 
