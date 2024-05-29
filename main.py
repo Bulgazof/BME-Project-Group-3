@@ -6,7 +6,7 @@ from queue import Queue
 
 
 if __name__ == "__main__":
-    big_queue = Queue(maxsize=0) # create a queue for interthread communication
+    big_queue = Queue(maxsize=0)
 
     # Start the UI thread
     ui_thread = threading.Thread(target=start_ui, args=(big_queue, ))

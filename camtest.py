@@ -7,13 +7,15 @@ import math
 from angleCalculator import angleCalculator
 from RingBuffer import RingBuffer
 from AudioFiles import TonePlayer
+global global_queue
+global_queue = None
+
 class CameraEstimator():
 
-    def __init__(self, queue):
+    def __init__(self):
         self.start_time = time.time()  # Get the current time
         self.condition_met = False  # Initialize the condition flag
         self.current_time = 0.0
-        self.queue = queue
 
         self.squatTrig = False
 
@@ -67,7 +69,7 @@ class CameraEstimator():
                 left_hip_angle = self.angle_calculator.get_angle(lm_arr, "hip_left", True)
                 right_hip_angle = self.angle_calculator.get_angle(lm_arr, "hip_right", True)
                 chest_angle = self.angle_calculator.get_angle(lm_arr, "chest", True)
-                self.queue.put(chest_angle)
+                global_queue.put(chest_angle)
 
                 # TODO Fix or just remove this
                 # angleBuffer.add(temp_angle)
@@ -97,7 +99,9 @@ class CameraEstimator():
 
     @staticmethod
     def camera_start(queue):
-        camera_estimator = CameraEstimator(queue)
+        global global_queue
+        global_queue = queue
+        camera_estimator = CameraEstimator()
         camera_estimator.run()
 
 
