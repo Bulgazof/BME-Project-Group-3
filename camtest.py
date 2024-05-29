@@ -1,14 +1,11 @@
 import cv2
 import mediapipe as mp
-import pygame
 import numpy as np
 import time
 import math
 from angleCalculator import angleCalculator
 from RingBuffer import RingBuffer
 from AudioFiles import TonePlayer
-global global_queue
-global_queue = None
 
 class CameraEstimator():
 
@@ -25,7 +22,6 @@ class CameraEstimator():
         self.mp_drawing_styles = mp.solutions.drawing_styles
         self.mp_pose = mp.solutions.pose
 
-        pygame.init()
         self.cap = cv2.VideoCapture(0)
         self.angle_calculator = angleCalculator()
 
@@ -69,7 +65,7 @@ class CameraEstimator():
                 left_hip_angle = self.angle_calculator.get_angle(lm_arr, "hip_left", True)
                 right_hip_angle = self.angle_calculator.get_angle(lm_arr, "hip_right", True)
                 chest_angle = self.angle_calculator.get_angle(lm_arr, "chest", True)
-                global_queue.put(chest_angle)
+                # global_queue.put(chest_angle)
 
                 # TODO Fix or just remove this
                 # angleBuffer.add(temp_angle)
@@ -83,7 +79,6 @@ class CameraEstimator():
                 # draw the vector
                 height, width, _ = image.shape
                 zero_vector = (int(width/2), int(height/2)) # vector that points to middle of screen to draw other vectors
-                print(right_shin_angle)
                 draw_vector_coords = (zero_vector[0] - int(200 * math.cos(right_shin_angle)), zero_vector[1] - int(200*math.sin(right_shin_angle)))
                 image = cv2.line(image, zero_vector, draw_vector_coords, (0, 255, 0), 5)
 
@@ -97,11 +92,11 @@ class CameraEstimator():
                 if cv2.waitKey(5) & 0xFF == 27:
                     break
 
-    @staticmethod
-    def camera_start(queue):
-        global global_queue
-        global_queue = queue
-        camera_estimator = CameraEstimator()
-        camera_estimator.run()
+def camera_start(queue):
+    global global_queue
+    global_queue = queue
+    camera_estimator = CameraEstimator()
+    print("camera thread started, except the run loop!")
+    camera_estimator.run()
 
 

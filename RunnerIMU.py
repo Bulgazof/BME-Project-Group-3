@@ -4,6 +4,8 @@ import csv
 from scipy.signal import find_peaks
 from CreaTeBME import SensorManager
 import time
+from datetime import datetime
+import threading
 
 class RunnerIMU:
     FREQUENCY = 60
@@ -57,21 +59,33 @@ class RunnerIMU:
         time.sleep(self.record_duration)
         if not self.running:
             return
-        print("Updating measurements and saving to CSV...")
         self.update_measurements()
         pelvis_y_accel = self.acc[self.SENSORS_NAMES[0]][:, 1]
         peaks = self.detect_peaks(pelvis_y_accel, self.t_stamp[self.SENSORS_NAMES[0]], 4, 10)
-        self.save_to_csv('FD92', 'data/pelvis_test.csv', peaks)
-        self.save_to_csv('F30E', 'data/tibia_test.csv', peaks)
+        current_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        print("Updating measurements and saving to CSV...")
+        self.save_to_csv('FD92', f'data/live_data/{current_time}_pelvis.csv', peaks)
+        self.save_to_csv('F30E', f'data/live_data/{current_time}_tibia.csv', peaks)
         self.running = False  # Stop the function after updating and saving
 
     def record(self):
         if not self.running:
-            print("Starting the functions...")
+            print("Starting the recording...")
             self.manager._clear_queue()
             self.running = True
             self.run_analysis()
 
-    def toggle_record(self, key):
-        self.record()
+    def listen_to_queue(self):
+        while True:
+            command = global_queue.get()
+            if command == "TOGGLE_RECORD":
+                print("got record toggle in imu")
+                self.record()
 
+def start_IMU(queue):
+    global global_queue
+    global_queue = queue
+    frame = RunnerIMU('FD92', 'F30E', 5, 10)
+    imu_thread = threading.Thread(target=frame.listen_to_queue)
+    imu_thread.start()
+    print("IMU thread started")

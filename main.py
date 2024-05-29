@@ -1,8 +1,9 @@
 import threading
 import time
 from UserInterface import start_ui
-from camtest import CameraEstimator
+from camtest import camera_start
 from queue import Queue
+from RunnerIMU import start_IMU
 
 
 if __name__ == "__main__":
@@ -13,7 +14,11 @@ if __name__ == "__main__":
     ui_thread.start()
 
     # Start the camera thread
-    camera_thread = threading.Thread(target=CameraEstimator.camera_start, args=(big_queue, ))
+    camera_thread = threading.Thread(target=camera_start, args=(big_queue, ))
     camera_thread.start()
+
+    # Start the IMU thread
+    imu_thread = threading.Thread(target=start_IMU, args=(big_queue,))
+    imu_thread.start()
 
     ui_thread.join() # only stop main thread when ui thread stops.

@@ -14,7 +14,6 @@ plot_var = ['acc_x', 'acc_y', 'acc_z', 'gyr_x', 'gyr_y', 'gyr_z']
 acc_var_names = ['acc_x', 'acc_y', 'acc_z']
 gyr_var_names = ['gyr_x', 'gyr_y', 'gyr_z']
 speed_var_names = ['vel_x', 'vel_y', 'vel_z']
-global big_queue
 
 
 def load_data(filepath):
@@ -174,6 +173,7 @@ class MainFrame(wx.Frame):
     def on_start(self, event):
         self.Hide()
         start_frame = StartFrame(None, title="Start Run")
+        global_queue.put("TOGGLE_RECORD")
         start_frame.Show()
 
 
@@ -294,13 +294,9 @@ class AccelerationFrame(wx.Frame):
 
 def start_ui(queue):
     app = wx.App(False)
-    big_queue = queue
+    global global_queue
+    global_queue = queue
     frame = MainFrame(None,  title="Sensor Data Analysis")
     frame.Show()
-    app.MainLoop()
-
-if __name__ == "__main__":
-    app = wx.App(False)
-    frame = MainFrame(None, title="Sensor Data Analysis")
-    frame.Show()
+    print("UI thread started")
     app.MainLoop()
