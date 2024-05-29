@@ -36,8 +36,8 @@ class Camera:
 
         # Setup file names for video and CSV outputs
         current_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        self.output_filename = f'data/recording_{current_time}.mp4'
-        self.csv_filename = f'data/landmarks_{current_time}.csv'
+        self.output_filename = f'data/{current_time}_recording.mp4'
+        self.csv_filename = f'data/{current_time}_landmarks.csv'
 
         # Initialize video writer
         self.fourcc = cv2.VideoWriter_fourcc(*'mp4v')

@@ -23,7 +23,7 @@ class angleCalculator:
         """
         if isinstance(lm_data, str):
             # Load CSV file if lm_data is a file location
-            lm_data = self.load_csv(lm_data)
+            lm_data = pd.read_csv(lm_data)
             return self.process_csv(lm_data, which_angle, buffer)
         if isinstance(lm_data, pd.DataFrame):
             # Process DataFrame
@@ -106,12 +106,6 @@ class angleCalculator:
         cos_theta = np.clip(cos_theta, -1.0, 1.0)
         angle = np.arccos(cos_theta)
         return angle
-
-    def load_csv(self, filename):
-        """
-        Load landmark data from a CSV file into a DataFrame.
-        """
-        return pd.read_csv(filename)
 
     def process_csv(self, df, which_angle, buffer):
         """
