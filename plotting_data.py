@@ -3,6 +3,8 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import scipy.signal as signal
 from scipy.signal import find_peaks
+from scipy.integrate import simps  # Import the Simpson's rule for integration
+
 
 sampling_frequency = 60  # Hz
 
@@ -171,33 +173,45 @@ def max_block_power(df, name):
         print("Something went wrong")
 
 
-def max_power_per_step(df, threshold, min_distance):
+def max_power_per_step(df, threshold, min_distance, window_size):
     # Find peaks in the 'power' column of the DataFrame
     peaks, properties = find_peaks(df['power'], height=threshold, distance=min_distance)
     # Extract the peak heights from properties
     heights = properties['peak_heights']
-    return peaks, heights
+
+    # Calculate the area under each peak
+    areas = []
+    for peak in peaks:
+        start = max(0, peak - window_size)
+        end = min(len(df), peak + window_size)
+        area = simps(df['power'][start:end], dx=1)  # Integrate using Simpson's rule
+        areas.append(area)
+
+    return peaks, heights, areas
 
 
-def plot_max_power_per_step(dataframes, variables):
-    plt.figure(figsize=(12, 8))
-
+def plot_max_power_per_step(dataframes, variables, threshold=4, min_distance=10, window_size=10):
+    fig, ax1 = plt.subplots(figsize=(12, 8))
+    ax2 = ax1.twinx()
     for df in dataframes:
-        peaks, heights = max_power_per_step(df, 4, 10)
+        peaks, heights, areas = max_power_per_step(df, threshold, min_distance, window_size)
 
         if variables:
             for var in variables:
                 if var in df.columns:
-                    plt.plot(df.index, df[var], label=f'{var} (Original)')
-                    plt.plot(peaks, heights, label=f'{var} Peaks')
-        else:
-            plt.plot(df.index, df['power'], label='Power (Original)')
-            plt.plot(peaks, heights, label='Power Peaks')
+                    ax1.plot(df.index, df[var], label=f'{var} (Original)')
+                    # ax1.plot(peaks, heights, 'x', label=f'{var} Peaks')
+    ax1.set_xlabel('Time')
+    ax1.set_ylabel('Power')
+    ax1.set_title('Power Peaks and Areas')
 
-    plt.xlabel('Time')
-    plt.ylabel('Power')
-    plt.title('Power Peaks')
-    plt.legend()
+    # Overlay the areas under each peak
+    for df in dataframes:
+        peaks, heights, areas = max_power_per_step(df, threshold, min_distance, window_size)
+        ax2.plot(peaks, areas, '--', label='Area under Peak')
+    ax1.legend(loc='upper left')
+    ax2.set_ylabel('Area under Peak')
+    ax2.legend(loc='upper right')
     plt.show()
 
 
@@ -208,23 +222,21 @@ def run():
     df_tibia_slow = load_data(r'../BME-Project-Group-3/data/tibia_slow.csv')
     df_pelvis = calc_norm(df_pelvis, acc_var_names, 'norm')
     df_pelvis_slow = calc_norm(df_pelvis_slow, acc_var_names, 'norm')
-
     df_tibia = calc_norm(df_tibia, acc_var_names, 'norm')
     df_tibia_slow = calc_norm(df_tibia_slow, acc_var_names, 'norm')
     plot_multiple_stack([df_pelvis, df_pelvis_slow], acc_var_names, 'all values')
     # plot_multiple_stack([df_tibia, df_tibia_slow], acc_var_names, 'all values')
-
     plot_power([df_pelvis], speed_var_names, acc_var_names, ['power', 'acc_y'],
                'Power of two runs (pelvis) + acc y')
     plot_power([df_pelvis_slow], speed_var_names, acc_var_names, ['power', 'acc_y'],
                'Power of two runs (pelvis) + acc y')
     # plot_power([df_tibia, df_tibia_slow], speed_var_names, acc_var_names, ['power'], 'power of two runs (tibia)')
+
     max_block_power(df_pelvis, 'fast run')
     max_block_power(df_pelvis_slow, 'slow run')
 
-    plot_max_power_per_step([df_pelvis, df_pelvis_slow], ['power'], )
-
-
+    plot_max_power_per_step([df_pelvis, df_pelvis_slow], ['power'], threshold=4, min_distance=10, window_size=10)
+    # test for force, vel x, y and z
 
 if __name__ == "__main__":
     run()
