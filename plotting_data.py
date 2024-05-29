@@ -194,8 +194,6 @@ def plot_max_power_per_step(dataframes, variables, threshold=4, min_distance=10,
     fig, ax1 = plt.subplots(figsize=(12, 8))
     ax2 = ax1.twinx()
     for df in dataframes:
-        peaks, heights, areas = max_power_per_step(df, threshold, min_distance, window_size)
-
         if variables:
             for var in variables:
                 if var in df.columns:
