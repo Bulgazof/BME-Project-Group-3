@@ -2,17 +2,18 @@ import threading
 import time
 from UserInterface import start_ui
 from camtest import CameraEstimator
-from AudioFiles import TonePlayer
+from queue import Queue
 
-
-audio = TonePlayer([1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3])
 
 if __name__ == "__main__":
+    big_queue = Queue(maxsize=0) # create a queue for interthread communication
+
     # Start the UI thread
-    ui_thread = threading.Thread(target=start_ui)
-    ui_thread.daemon = False  # Allows the program to exit even if the thread is still running
+    ui_thread = threading.Thread(target=start_ui, args=(big_queue, ))
     ui_thread.start()
 
     # Start the camera thread
-    camera_thread = threading.Thread(target=CameraEstimator.camera_start)
+    camera_thread = threading.Thread(target=CameraEstimator.camera_start, args=(big_queue, ))
     camera_thread.start()
+
+    ui_thread.join() # only stop main thread when ui thread stops.

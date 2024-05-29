@@ -6,13 +6,14 @@ import time
 import math
 from angleCalculator import angleCalculator
 from RingBuffer import RingBuffer
-
+from AudioFiles import TonePlayer
 class CameraEstimator():
 
-    def __init__(self):
+    def __init__(self, queue):
         self.start_time = time.time()  # Get the current time
         self.condition_met = False  # Initialize the condition flag
         self.current_time = 0.0
+        self.queue = queue
 
         self.squatTrig = False
 
@@ -25,6 +26,8 @@ class CameraEstimator():
         pygame.init()
         self.cap = cv2.VideoCapture(0)
         self.angle_calculator = angleCalculator()
+
+        self.audio = TonePlayer([1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3])
 
     def run(self):
         with self.mp_pose.Pose(
@@ -64,6 +67,7 @@ class CameraEstimator():
                 left_hip_angle = self.angle_calculator.get_angle(lm_arr, "hip_left", True)
                 right_hip_angle = self.angle_calculator.get_angle(lm_arr, "hip_right", True)
                 chest_angle = self.angle_calculator.get_angle(lm_arr, "chest", True)
+                self.queue.put(chest_angle)
 
                 # TODO Fix or just remove this
                 # angleBuffer.add(temp_angle)
@@ -92,8 +96,8 @@ class CameraEstimator():
                     break
 
     @staticmethod
-    def camera_start():
-        camera_estimator = CameraEstimator()
+    def camera_start(queue):
+        camera_estimator = CameraEstimator(queue)
         camera_estimator.run()
 
 
