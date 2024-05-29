@@ -232,6 +232,7 @@ def run():
                'Power of two runs (pelvis) + acc y')
     # plot_power([df_tibia, df_tibia_slow], speed_var_names, acc_var_names, ['power'], 'power of two runs (tibia)')
 
+
     max_block_power(df_pelvis, 'fast run')
     max_block_power(df_pelvis_slow, 'slow run')
 
