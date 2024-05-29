@@ -219,7 +219,7 @@
                 "sha256:fb8cd6559f0ae3a8f5e146f80ab2a90ad0325a759be8d48ee82758a0b89fa0aa"
             ],
             "markers": "python_version >= '3.8'",
-            "version": "==4.52.4"
+            "version": "==4.51.0"
         },
         "jax": {
             "hashes": [
