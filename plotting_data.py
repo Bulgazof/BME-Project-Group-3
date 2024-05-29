@@ -123,27 +123,6 @@ def complementary_angle(df, alpha):
     return df
 
 
-#
-# def run():
-#     df_pelvis = load_data(r'data\test1.csv')
-#     df_tibia = load_data(r'data\test2.csv')
-#     # plot_multiple_stack([df_head, df_tibia], acc_var_names, 'head and tibia')
-#     calc_stride_freq(df_tibia, 'acc_x', 36, invert=True)
-#     df_pelvis = calc_acc_norm(df_pelvis)
-#     df_tibia = calc_acc_norm(df_tibia)
-#     print(f'Tibia mean norm: {df_tibia['norm'].mean()}')
-#     # plot_multiple_comb([df_head, df_tibia], ['norm'], 'norms of head and tibia')
-#     tibia_peaks = calc_stride_freq(df_tibia, 'norm', 42, invert=False)
-#     pelvis_peaks = calc_stride_freq(df_pelvis, 'norm', 22, invert=False)
-#     average_attenuation = calc_attenuation(tibia_peaks, pelvis_peaks)
-#     print(f'Average shock attenuation right leg to head: {average_attenuation}%')
-#     df_tibia = add_angles(df_tibia)
-#     # plot_multiple_comb([df_tibia], ['acc_y_angle', 'gyr_y_angle', 'hp_gyr_y_angle'], 'angles from accel and gyro')
-#     df_tibia = complementary_angle(df_tibia, 0.9)
-#     plot_multiple_comb([df_tibia], ['acc_y_angle', 'hp_gyr_y_angle'], 'angles from accel and gyro')
-#     plot_multiple_comb([df_tibia], ['acc_y_angle', 'compl_y_angle', 'hp_gyr_y_angle'], 'angles from accel and gyro')
-
-
 def calc_force(df, mass):
     df['force'] = df['norm'] * mass
     return df
@@ -192,6 +171,36 @@ def max_block_power(df, name):
         print("Something went wrong")
 
 
+def max_power_per_step(df, threshold, min_distance):
+    # Find peaks in the 'power' column of the DataFrame
+    peaks, properties = find_peaks(df['power'], height=threshold, distance=min_distance)
+    # Extract the peak heights from properties
+    heights = properties['peak_heights']
+    return peaks, heights
+
+
+def plot_max_power_per_step(dataframes, variables):
+    plt.figure(figsize=(12, 8))
+
+    for df in dataframes:
+        peaks, heights = max_power_per_step(df, 4, 10)
+
+        if variables:
+            for var in variables:
+                if var in df.columns:
+                    plt.plot(df.index, df[var], label=f'{var} (Original)')
+                    plt.plot(peaks, heights, label=f'{var} Peaks')
+        else:
+            plt.plot(df.index, df['power'], label='Power (Original)')
+            plt.plot(peaks, heights, label='Power Peaks')
+
+    plt.xlabel('Time')
+    plt.ylabel('Power')
+    plt.title('Power Peaks')
+    plt.legend()
+    plt.show()
+
+
 def run():
     df_pelvis = load_data(r'../BME-Project-Group-3/data/pelvis_test.csv')
     df_tibia = load_data(r'../BME-Project-Group-3/data/tibia.csv')
@@ -206,12 +215,14 @@ def run():
     # plot_multiple_stack([df_tibia, df_tibia_slow], acc_var_names, 'all values')
 
     plot_power([df_pelvis], speed_var_names, acc_var_names, ['power', 'acc_y'],
-               'Power of two runs (pelvis) + accZ')
+               'Power of two runs (pelvis) + acc y')
     plot_power([df_pelvis_slow], speed_var_names, acc_var_names, ['power', 'acc_y'],
-               'Power of two runs (pelvis) + accZ')
+               'Power of two runs (pelvis) + acc y')
     # plot_power([df_tibia, df_tibia_slow], speed_var_names, acc_var_names, ['power'], 'power of two runs (tibia)')
     max_block_power(df_pelvis, 'fast run')
     max_block_power(df_pelvis_slow, 'slow run')
+
+    plot_max_power_per_step([df_pelvis, df_pelvis_slow], ['power'], )
 
 
 
