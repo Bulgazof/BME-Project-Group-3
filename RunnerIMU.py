@@ -43,9 +43,11 @@ class RunnerIMU:
         return peak_times
 
     def save_to_csv(self, sensor_name, file_path, peaks):
-        desired_peak = peaks[self.step_num]
-        num_rows_to_save = int(desired_peak * self.FREQUENCY)
-
+        if len(peaks) > 0:
+            desired_peak = peaks[self.step_num]
+            num_rows_to_save = int(desired_peak * self.FREQUENCY)
+        else:
+            num_rows_to_save = len(self.data)
         with open(file_path, mode='w', newline='') as file:
             writer = csv.writer(file)
             for row in self.data[sensor_name][:num_rows_to_save]:
@@ -70,15 +72,6 @@ class RunnerIMU:
             self.running = True
             self.run_analysis()
 
-    def on_press(self, key):
-        if key == Key.space:
-            self.record()
+    def toggle_record(self, key):
+        self.record()
 
-    def start_listener(self):
-        with Listener(on_press=self.on_press) as listener:
-            listener.join()
-
-
-if __name__ == "__main__":
-    sensor_handler = RunnerIMU('FD92', 'F30E', 5, 10)
-    sensor_handler.start_listener()
