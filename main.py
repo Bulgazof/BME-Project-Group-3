@@ -1,16 +1,24 @@
 import threading
 import time
-from UserInterface import *
-from AudioFiles import *
-
-def update_windows():
-    while True:
-        print("test2")
+from UserInterface import start_ui
+from camtest import camera_start
+from queue import Queue
+from RunnerIMU import start_IMU
 
 
-print("test1")
+if __name__ == "__main__":
+    big_queue = Queue(maxsize=0)
 
-app = MyApp()
-threading.Thread(target=update_windows).start()
+    # Start the UI thread
+    ui_thread = threading.Thread(target=start_ui, args=(big_queue, ))
+    ui_thread.start()
 
-app.MainLoop()
+    # Start the camera thread
+    camera_thread = threading.Thread(target=camera_start, args=(big_queue, ))
+    camera_thread.start()
+
+    # Start the IMU thread
+    imu_thread = threading.Thread(target=start_IMU, args=(big_queue,))
+    imu_thread.start()
+
+    ui_thread.join() # only stop main thread when ui thread stops.

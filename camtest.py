@@ -36,8 +36,8 @@ class Camera:
 
         # Setup file names for video and CSV outputs
         current_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        self.output_filename = f'data/{current_time}_recording.mp4'
-        self.csv_filename = f'data/{current_time}_landmarks.csv'
+        self.output_filename = f'data/live_data/{current_time}_recording.mp4'
+        self.csv_filename = f'data/live_data/{current_time}_landmarks.csv'
 
         # Initialize video writer
         self.fourcc = cv2.VideoWriter_fourcc(*'mp4v')
@@ -146,3 +146,13 @@ if __name__ == "__main__":
     cam1 = Camera()
     cam1.setup()
     cam1.run()
+
+def camera_start(queue):
+    global global_queue
+    global_queue = queue
+    camera = Camera()
+    print("camera thread started, except the run loop!")
+    camera.setup()
+    camera.run()
+
+

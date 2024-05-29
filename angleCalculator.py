@@ -177,7 +177,7 @@ if __name__ == "__main__":
     angle_calculator = angleCalculator()
 
     # Calculate all angles from a CSV file
-    csv_file = 'data/landmarks_2024-05-29_15-15-26.csv'
+    csv_file = 'data/live_data/2024-05-29_17-26-53_landmarks.csv'
     all_angles = angle_calculator.get_angle(csv_file, which_angle='all', buffer=True)
 
     # Unpack the angles for plotting
