@@ -1,7 +1,3 @@
-import threading
-import time
-from UserInterface import *
-from AudioFiles import *
 from RunnerIMU import RunnerIMU
 
 
@@ -9,7 +5,7 @@ from RunnerIMU import RunnerIMU
 
 if __name__ == "__main__":
     sensor_handler = RunnerIMU('FD92', 'F30E', 5, 10)
-    sensor_handler.start_listener()
+
 
 
 
