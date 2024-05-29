@@ -1,140 +1,148 @@
 import cv2
 import mediapipe as mp
-import pygame
-import numpy as np
 import time
 import math
 import csv
 import os
-
+from datetime import datetime
 from angleCalculator import angleCalculator
 from AudioFiles import TonePlayer
-from RingBuffer import RingBuffer
-
-# Initialize variables
-start_time = time.time()  # Get the current time
-condition_met = False  # Initialize the condition flag
-current_time = 0.0
-frame = 0
-display_FPS = 0.5
-prev_time = time.time()
-cum_frame_time = 0
-prev_frame_time = time.time()
-
-# Put before while loop
-player_1 = TonePlayer([2, 2, 2, 2, 2, 2, 2, 2, 2, 1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3],440)
-player_1.start()
 
 
-# Initialize MediaPipe Pose and drawing utilities
-mp_drawing = mp.solutions.drawing_utils
-mp_drawing_styles = mp.solutions.drawing_styles
-mp_pose = mp.solutions.pose
+class Camera:
+    def __init__(self):
+        # Initialize time and frame counters
+        self.start_time = time.time()
+        self.condition_met = False
+        self.current_time = 0.0
+        self.frame = 0
+        self.display_FPS = 0.5
+        self.prev_time = time.time()
+        self.cum_frame_time = 0
+        self.prev_frame_time = time.time()
 
-# Initialize Pygame and video capture
-pygame.init()
-cap = cv2.VideoCapture(0)
+        # Initialize tone player with frequency adjustments
+        self.player_1 = TonePlayer([2, 2, 2, 2, 2, 2, 2, 2, 2, 1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3], 440)
 
-# Initialize angle calculator
-angle_calculator = angleCalculator()
+        # Initialize MediaPipe pose components
+        self.mp_drawing = mp.solutions.drawing_utils
+        self.mp_drawing_styles = mp.solutions.drawing_styles
+        self.mp_pose = mp.solutions.pose
 
-# Function to save landmark array to a CSV file
-def save_landmarks_to_csv(lm_arr, filename="data/landmarks.csv"):
-    # Check if the file exists
-    file_exists = os.path.exists(filename)
+        self.cap = cv2.VideoCapture(0)
 
-    with open(filename, mode='a', newline='') as file:
-        writer = csv.writer(file)
+        # Initialize angle calculator
+        self.angle_calculator = angleCalculator()
 
-        # Write header if the file doesn't exist
-        if not file_exists:
-            header = []
-            for i in range(len(lm_arr)):
-                header.extend(['lm{}_x'.format(i + 1), 'lm{}_y'.format(i + 1), 'lm{}_z'.format(i + 1)])
-            writer.writerow(header)
+        # Setup file names for video and CSV outputs
+        current_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        self.output_filename = f'data/recording_{current_time}.mp4'
+        self.csv_filename = f'data/landmarks_{current_time}.csv'
 
-        # Write landmark data
-        row = []
-        for lm in lm_arr:
-            row.extend([lm.x, lm.y, lm.z])  # Append x, y, z coordinates of each landmark
-        writer.writerow(row)
+        # Initialize video writer
+        self.fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+        self.output_video = cv2.VideoWriter(self.output_filename, self.fourcc, 20.0, (640, 480))
 
+    def save_landmarks_to_csv(self, lm_arr):
+        # Check if CSV file already exists
+        file_exists = os.path.exists(self.csv_filename)
+        # Open the CSV file in append mode
+        with open(self.csv_filename, mode='a', newline='') as file:
+            writer = csv.writer(file)
+            # Write header if file does not exist
+            if not file_exists:
+                header = []
+                for i in [11, 12, 23, 24, 25, 26, 27, 28]:
+                    header.extend([f'lm{i}_x', f'lm{i}_y', f'lm{i}_z'])
+                writer.writerow(header)
+            # Write the selected landmarks to the CSV file
+            row = []
+            for i in [11, 12, 23, 24, 25, 26, 27, 28]:
+                lm = lm_arr[i]
+                row.extend([lm.x, lm.y, lm.z])
+            writer.writerow(row)
 
-# Initialize video writer object
-output_filename = 'data/output_video.mp4'
-fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-output_video = cv2.VideoWriter(output_filename, fourcc, 20.0, (640, 480))
-
-# Start MediaPipe Pose estimation
-with mp_pose.Pose(model_complexity=1, min_detection_confidence=0.5, min_tracking_confidence=0.5) as pose:
-    while cap.isOpened():
-        success, image = cap.read()
-        if not success:
-            print("Ignoring empty camera frame.")
-            continue
-
-        # Convert the image to RGB and process it with MediaPipe Pose
+    def process_frame(self, pose, image):
+        # Convert image to RGB and process with MediaPipe
         image.flags.writeable = False
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         results = pose.process(image)
 
-        frame += 1
-        cum_frame_time += 1/(time.time() - prev_frame_time)
-        print(1/(time.time() - prev_frame_time))
-        prev_frame_time = time.time()
+        # Convert image back to BGR for OpenCV
+        image.flags.writeable = True
+        image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
 
-        # Convert the image back to BGR for OpenCV
-        # image.flags.writeable = True
-        # image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+        self.frame += 1
+        self.cum_frame_time += 1 / (time.time() - self.prev_frame_time)
+        self.prev_frame_time = time.time()
 
-        # Draw pose landmarks on the image
         if results.pose_landmarks:
-            # mp_drawing.draw_landmarks(
-            #     image,
-            #     results.pose_landmarks,
-            #     mp_pose.POSE_CONNECTIONS,
-            #     landmark_drawing_spec=mp_drawing_styles.get_default_pose_landmarks_style()
-            # )
-
-            # Get the landmarks
             lm_arr = results.pose_landmarks.landmark
+            chest_angle = self.angle_calculator.get_angle(lm_arr, "chest", True)
 
-            # image = np.zeros_like(image)
+            # Adjust tone based on chest angle
+            self.player_1.base_pitch = 440 + (chest_angle - 1) * 80
 
-            # Calculate angles
-            chest_angle = angle_calculator.get_angle(lm_arr, "chest", True)
-            print(chest_angle)
-            player_1.base_pitch = 440 + (chest_angle - 1) * 80
-            # Draw vector for right shin angle
+            # Draw vector on image
             height, width, _ = image.shape
-            zero_vector = (int(width / 2), int(height / 2))  # Center of the screen
+            zero_vector = (int(width / 2), int(height / 2))
             draw_vector_coords = (
                 zero_vector[0] - int(200 * math.cos(chest_angle)),
                 zero_vector[1] - int(200 * math.sin(chest_angle))
             )
             image = cv2.line(image, zero_vector, draw_vector_coords, (0, 255, 0), 5)
+            image = cv2.line(image, (zero_vector[0] + 100, zero_vector[1]), (int(width / 2) - 100, int(height / 2)),
+                             (0, 0, 255), 5)
 
-            # Draw a horizontal line on the screen
-            image = cv2.line(image, (zero_vector[0] + 100, zero_vector[1]), (int(width / 2) - 100, int(height / 2)), (0, 0, 255), 5)
+            # Save selected landmarks to CSV
+            self.save_landmarks_to_csv(lm_arr)
 
-            # Save landmarks to CSV
-            save_landmarks_to_csv(lm_arr)
+        # Write the frame to the video file
+        self.output_video.write(image)
 
-        # Write frame to output video
-        output_video.write(image)
+        # Display the frame at a set FPS
+        if self.prev_time + 1 / self.display_FPS < time.time():
+            cv2.imshow('Running', cv2.flip(image, 1))
+            self.prev_time = time.time()
 
-        # Display the image
-        if prev_time + 1/display_FPS < time.time():
-            cv2.imshow('MediaPipe Pose', cv2.flip(image, 1))
-            prev_time = time.time()
+    def run(self):
+        # Start the tone player
+        self.player_1.start()
 
-        # Break the loop on 'ESC' key press
-        if cv2.waitKey(5) & 0xFF == 27:
-            print(f"Average Frame Rate: {cum_frame_time/frame}")
-            break
+        # Setup MediaPipe Pose
+        with self.mp_pose.Pose(model_complexity=1, min_detection_confidence=0.5, min_tracking_confidence=0.5) as pose:
+            while self.cap.isOpened():
+                success, image = self.cap.read()
+                if not success:
+                    print("Ignoring empty camera frame.")
+                    continue
+                self.process_frame(pose, image)
+                if cv2.waitKey(5) & 0xFF == 27:
+                    print(f"Average Frame Rate: {self.cum_frame_time / self.frame}")
+                    break
+        self.cleanup()
 
-# Release resources
-pygame.quit()
-cap.release()
-output_video.release()
-cv2.destroyAllWindows()
+    def setup(self):
+        # Initial setup to display camera feed
+        while self.cap.isOpened():
+            success, image = self.cap.read()
+            if not success:
+                print("Ignoring empty camera frame.")
+                continue
+            else:
+                cv2.imshow('Camera Setup Window', cv2.flip(image, 1))
+                if cv2.waitKey(5) & 0xFF == 27:
+                    break
+        cv2.destroyAllWindows()
+
+    def cleanup(self):
+        # Cleanup resources
+        self.cap.release()
+        self.output_video.release()
+        cv2.destroyAllWindows()
+
+
+if __name__ == "__main__":
+    cam1 = Camera()
+    cam1.setup()
+    cam1.run()
