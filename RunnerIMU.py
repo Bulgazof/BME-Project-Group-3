@@ -1,5 +1,4 @@
 import numpy as np
-from pynput.keyboard import Key, Listener
 import csv
 from scipy.signal import find_peaks
 from CreaTeBME import SensorManager

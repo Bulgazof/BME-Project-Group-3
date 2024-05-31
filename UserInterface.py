@@ -1,8 +1,10 @@
 import wx
+from RunnerIMU import RunnerIMU
 import wx.lib.plot as wxplot
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import threading
 import scipy.signal as signal
 from scipy.signal import find_peaks
 
@@ -48,7 +50,7 @@ def calc_power(df):
     return df
 
 
-def process_data_for_plotting(dataframe_list, speed_variables, acc_variables):
+def process_data_for_plotting(dataframe_list, speed_variables, acc_variables, runner_weight):
     for dataframe in dataframe_list:
         dataframe = calc_speed(dataframe, acc_variables, speed_variables)
         dataframe = calc_force(dataframe, runner_weight)
@@ -94,7 +96,6 @@ class MainFrame(wx.Frame):
 
         # Values to display
         self.values = {
-            'Setup Run': 'Setup Run',
             'Start Run': 'Start Run',
             'Stride Frequency': 'Stride Frequency',
             'Power': 'Power',
@@ -114,7 +115,7 @@ class MainFrame(wx.Frame):
         for label, value in self.values.items():
             if label == 'Start Run' and not first_row_added:
                 display_label = f'{label}'
-                btn = wx.Button(panel, label=display_label, size=(150, 50))
+                btn = wx.Button(panel, label=display_label, size=(150, 100))
                 btn.SetFont(wx.Font(25, wx.DEFAULT, wx.NORMAL, wx.BOLD))
                 btn.SetBackgroundColour(wx.Colour(152, 251, 152))
                 btn.Bind(wx.EVT_BUTTON, self.on_start)
@@ -138,6 +139,14 @@ class MainFrame(wx.Frame):
                 lbl = wx.StaticText(panel, label=display_label)
                 lbl.SetFont(wx.Font(20, wx.DEFAULT, wx.NORMAL, wx.BOLD))
                 self.original_sizer.Add(lbl, 0, wx.ALIGN_CENTER | wx.ALL, 10)
+    def ask(self, parent=None, message='', default_value=''):
+        dlg = wx.TextEntryDialog(parent, message, value=default_value)
+        if dlg.ShowModal() == wx.ID_OK:
+            result = dlg.GetValue()
+        else:
+            result = None
+        dlg.Destroy()
+        return result
 
     def on_stride_frequency(self, event):
         df_pelvis = load_data(r'../BME-Project-Group-3/data/pelvis_test.csv')
@@ -154,10 +163,11 @@ class MainFrame(wx.Frame):
 
         df_pelvis = calc_norm(df_pelvis, acc_var_names, 'norm')
         df_pelvis_slow = calc_norm(df_pelvis_slow, acc_var_names, 'norm')
+        x = self.ask(message='Input your Weight')
+        x = int(x)
+        dataframes = process_data_for_plotting([df_pelvis, df_pelvis_slow], speed_var_names, acc_var_names, x)
 
-        dataframes = process_data_for_plotting([df_pelvis, df_pelvis_slow], speed_var_names, acc_var_names)
-
-
+        self.Hide()
         power_frame = PowerFrame(None, title="Power Data", dataframes=dataframes)
         power_frame.Show()
 
@@ -192,7 +202,7 @@ class StartFrame(wx.Frame):
         panel = wx.Panel(self)
         vbox = wx.BoxSizer(wx.VERTICAL)
 
-        end_run_btn = wx.Button(panel, label="End Run", size=(500, 500))
+        end_run_btn = wx.Button(panel, label="View Data", size=(150, 50))
         end_run_btn.SetFont(wx.Font(20, wx.DEFAULT, wx.NORMAL, wx.BOLD))
         end_run_btn.SetBackgroundColour(wx.Colour(250, 128, 114))
         end_run_btn.Bind(wx.EVT_BUTTON, self.on_end_run)
@@ -244,7 +254,7 @@ class PowerFrame(wx.Frame):
         power_data2 = wxplot.PolyLine(data2, colour='red', legend='Run 2')
 
         graphics = wxplot.PlotGraphics([power_data1, power_data2], "Power Data", "Time", "Power")
-        self.canvas.SetEnableLegend(True)
+        self.figure.enableLegend = True
         self.canvas.Draw(graphics)
 
     def on_back(self, event):
@@ -291,7 +301,7 @@ class AccelerationFrame(wx.Frame):
 
         graphics = wxplot.PlotGraphics([acc_data1, acc_data2], "Acceleration Data", "Time", "Acceleration")
 
-        self.canvas.SetEnableLegend(True)
+        self.figure.enableLegend = True
         self.canvas.Draw(graphics)
 
     def on_back(self, event):
