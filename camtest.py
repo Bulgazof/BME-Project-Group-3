@@ -7,6 +7,7 @@ import os
 from datetime import datetime
 from angleCalculator import angleCalculator
 from AudioFiles import TonePlayer
+import threading
 
 
 class Camera:
@@ -141,6 +142,20 @@ class Camera:
         self.output_video.release()
         cv2.destroyAllWindows()
 
+    def wait_for_setup(self):
+        while True:
+            command = global_queue.get()
+            if command == "CAMERA_SETUP":
+                print("Got Camera setup in Camera")
+                self.setup()
+
+    def wait_for_record(self):
+        while True:
+            command = global_queue.get()
+            if command == "CAMERA_RECORD":
+                print("Got Camera record in Camera")
+                self.run()
+
 
 if __name__ == "__main__":
     cam1 = Camera()
@@ -148,11 +163,14 @@ if __name__ == "__main__":
     cam1.run()
 
 def camera_start(queue):
+    print("Initializing Camera...")
     global global_queue
     global_queue = queue
     camera = Camera()
-    print("camera thread started, except the run loop!")
-    camera.setup()
-    camera.run()
-
-
+    camera_setup_thread = threading.Thread(target=camera.wait_for_setup)
+    camera_setup_thread.start()
+    print("Camera setup thread started")
+    camera_recording_thread = threading.Thread(target=camera.wait_for_record)
+    camera_recording_thread.start()
+    print("Camera recording thread started")
+    print("Camera initialization complete")

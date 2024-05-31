@@ -79,6 +79,7 @@ class MainFrame(wx.Frame):
     def __init__(self, *args, **kw):
         super(MainFrame, self).__init__(*args, **kw, size=(1200, 800))  # Set the window size here
         self.InitUI()
+        self.setup = False
 
     def InitUI(self):
         panel = wx.Panel(self)
@@ -93,6 +94,7 @@ class MainFrame(wx.Frame):
 
         # Values to display
         self.values = {
+            'Setup Run': 'Setup Run',
             'Start Run': 'Start Run',
             'Stride Frequency': 'Stride Frequency',
             'Power': 'Power',
@@ -112,7 +114,7 @@ class MainFrame(wx.Frame):
         for label, value in self.values.items():
             if label == 'Start Run' and not first_row_added:
                 display_label = f'{label}'
-                btn = wx.Button(panel, label=display_label, size=(150, 100))
+                btn = wx.Button(panel, label=display_label, size=(150, 50))
                 btn.SetFont(wx.Font(25, wx.DEFAULT, wx.NORMAL, wx.BOLD))
                 btn.SetBackgroundColour(wx.Colour(152, 251, 152))
                 btn.Bind(wx.EVT_BUTTON, self.on_start)
@@ -170,11 +172,17 @@ class MainFrame(wx.Frame):
         acceleration_frame = AccelerationFrame(None, title="Acceleration Data", dataframes=[df_pelvis, df_pelvis_slow])
         acceleration_frame.Show()
 
+    def on_setup(self, event):
+        self.Hide()
+        global_queue.put("CAMERA_SETUP")
+        self.setup = True
+
     def on_start(self, event):
         self.Hide()
         start_frame = StartFrame(None, title="Start Run")
-        global_queue.put("TOGGLE_RECORD")
+        global_queue.put("CAMERA_RECORD")
         start_frame.Show()
+
 
 
 class StartFrame(wx.Frame):
