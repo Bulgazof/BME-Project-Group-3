@@ -132,7 +132,7 @@ class MainFrame(wx.Frame):
         self.original_sizer = wx.GridSizer(rows=3, cols=2, hgap=20, vgap=20)
 
         # Example values
-        global weightAsked  # Declare weightAsked as global to modify it inside the method
+        global weightAsked  # Declare weightAsked as global to modify it inside the method  
         if not weightAsked:
             global weight
             weight = self.ask(message='Input your Weight')
