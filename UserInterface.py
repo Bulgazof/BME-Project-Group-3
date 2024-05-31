@@ -317,7 +317,7 @@ class PowerFrame(wx.Frame):
         self.Hide()
         main_frame = MainFrame(None, title="Sensor Data Analysis")
         main_frame.Show()
-
+        #0
 
 class AccelerationFrame(wx.Frame):
     def __init__(self, *args, dataframes=None, **kw):
