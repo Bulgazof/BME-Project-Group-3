@@ -7,17 +7,15 @@ import matplotlib.pyplot as plt
 import threading
 import scipy.signal as signal
 from scipy.signal import find_peaks
+from scipy.integrate import simps
 
 sampling_frequency = 60  # Hz
-
-runner_weight = 68  # Kg
 var_names = ['acc_x', 'acc_y', 'acc_z', 'gyr_x', 'gyr_y', 'gyr_z', 'timestamp']  # Initiate variable names
 plot_var = ['acc_x', 'acc_y', 'acc_z', 'gyr_x', 'gyr_y', 'gyr_z']
 acc_var_names = ['acc_x', 'acc_y', 'acc_z']
 gyr_var_names = ['gyr_x', 'gyr_y', 'gyr_z']
 speed_var_names = ['vel_x', 'vel_y', 'vel_z']
-
-
+weightAsked = False
 def load_data(filepath):
     df = pd.read_csv(filepath, names=var_names)  # Load the head data
     return df
@@ -26,7 +24,9 @@ def load_data(filepath):
 def calc_norm(df, var_list, name):
     df[name] = np.sqrt(df[var_list[0]] ** 2 + df[var_list[1]] ** 2 + df[var_list[2]] ** 2)
     return df
-
+def calc_power(df):
+    df['power'] = df['vel_norm'] * df['force']
+    return df
 
 def calc_force(df, mass):
     df['force'] = df['norm'] * mass
@@ -45,9 +45,7 @@ def integrate(data, time_interval):
     return integrated_data
 
 
-def calc_power(df):
-    df['power'] = df['vel_norm'] * df['force']
-    return df
+
 
 
 def process_data_for_plotting(dataframe_list, speed_variables, acc_variables, runner_weight):
@@ -76,6 +74,50 @@ def plot_multiple_stack(datasets, variables, title):
     plt.tight_layout()  # Adjust layout to prevent overlap
     plt.show()
 
+def detect_first_peak(accel, threshold, min_distance):
+    peaks, _ = find_peaks(accel, height=threshold, distance=min_distance)
+    if len(peaks) > 0:
+        return peaks[0]
+    else:
+        return None
+
+
+
+def max_block_power(runner_weight, speed_variables):
+    df = load_data(r'../BME-Project-Group-3/data/pelvis_test.csv')
+    acc_var_names = ['acc_x', 'acc_y', 'acc_z']  # Example variable names, replace with actual ones
+    df_pelvis = calc_norm(df, acc_var_names, 'norm')
+
+    # Check if the 'power' column exists
+    dataframe = calc_force(df, runner_weight)
+    dataframe = calc_speed(dataframe, acc_var_names, speed_variables)
+    dataframe = calc_norm(dataframe, speed_variables, 'vel_norm')
+    dataframe = calc_power(dataframe)
+
+    first_peak_index = detect_first_peak(df_pelvis['acc_y'], 4, 10)
+    if first_peak_index is not None:
+        max_power_up_to_peak = dataframe['power'][:first_peak_index - 3].max()
+        return max_power_up_to_peak
+    return None
+
+def max_power_per_step(df, threshold, min_distance, window_size):
+    # Find peaks in the 'power' column of the DataFrame
+    peaks, properties = find_peaks(df['power'], height=threshold, distance=min_distance)
+    # Extract the peak heights from properties
+    heights = properties['peak_heights']
+
+    # Calculate the area under each peak
+    areas = []
+    for peak in peaks:
+        start = max(0, peak - window_size)
+        end = min(len(df), peak + window_size)
+        area = simps(df['power'][start:end], dx=1)  # Integrate using Simpson's rule
+        areas.append(area)
+
+    return peaks, heights, areas
+
+
+
 
 class MainFrame(wx.Frame):
     def __init__(self, *args, **kw):
@@ -90,16 +132,23 @@ class MainFrame(wx.Frame):
         self.original_sizer = wx.GridSizer(rows=3, cols=2, hgap=20, vgap=20)
 
         # Example values
-        reaction_time = 0.8
-        finish = 18.5
+        global weightAsked  # Declare weightAsked as global to modify it inside the method
+        if not weightAsked:
+            global weight
+            weight = self.ask(message='Input your Weight')
+            weight = int(weight)
+
+            weightAsked = True
+        power_step = max_block_power(weight, speed_var_names)
 
         # Values to display
         self.values = {
             'Start Run': 'Start Run',
+            'Camera Setup': 'Camera Setup',
             'Stride Frequency': 'Stride Frequency',
             'Power': 'Power',
             'Acceleration': 'Acceleration',
-            'Reaction Time': reaction_time,
+            'Power step': power_step,
         }
 
         self.create_widgets(panel, top_sizer)
@@ -110,28 +159,23 @@ class MainFrame(wx.Frame):
         self.Centre()
 
     def create_widgets(self, panel, top_sizer):
-        first_row_added = False
         for label, value in self.values.items():
-            if label == 'Start Run' and not first_row_added:
-                display_label = f'{label}'
-                btn = wx.Button(panel, label=display_label, size=(150, 100))
-                btn.SetFont(wx.Font(25, wx.DEFAULT, wx.NORMAL, wx.BOLD))
-                btn.SetBackgroundColour(wx.Colour(152, 251, 152))
-                btn.Bind(wx.EVT_BUTTON, self.on_start)
-                top_sizer.Add(btn, 1, wx.EXPAND | wx.ALL, 10)
-                first_row_added = True
-            elif label in ['Stride Frequency', 'Power', 'Acceleration']:
+            if label in ['Start Run','Stride Frequency', 'Power', 'Acceleration', 'Camera Setup']:
                 display_label = f'{label}'
                 btn = wx.Button(panel, label=display_label, size=(150, 50))
                 btn.SetFont(wx.Font(20, wx.DEFAULT, wx.NORMAL, wx.BOLD))
                 btn.SetBackgroundColour(wx.Colour(230, 230, 250))
                 if label == 'Stride Frequency':
                     btn.Bind(wx.EVT_BUTTON, self.on_stride_frequency)
-
+                elif label == 'Start run':
+                    btn.Bind(wx.EVT_BUTTON, self.on_start)
                 elif label == 'Power':
                     btn.Bind(wx.EVT_BUTTON, self.on_power)
                 elif label == 'Acceleration':
                     btn.Bind(wx.EVT_BUTTON, self.on_acceleration)
+                # elif label == 'Camera Setup':
+                #     btn.Bind(wx.EVT_BUTTON, self.on_camera)
+
                 self.original_sizer.Add(btn, 0, wx.EXPAND | wx.ALL, 10)
             else:
                 display_label = f'{label}: {value}'
@@ -162,9 +206,9 @@ class MainFrame(wx.Frame):
 
         df_pelvis = calc_norm(df_pelvis, acc_var_names, 'norm')
         df_pelvis_slow = calc_norm(df_pelvis_slow, acc_var_names, 'norm')
-        x = self.ask(message='Input your Weight')
-        x = int(x)
-        dataframes = process_data_for_plotting([df_pelvis, df_pelvis_slow], speed_var_names, acc_var_names, x)
+
+
+        dataframes = process_data_for_plotting([df_pelvis, df_pelvis_slow], speed_var_names, acc_var_names, weight)
 
         self.Hide()
         power_frame = PowerFrame(None, title="Power Data", dataframes=dataframes)
@@ -188,6 +232,9 @@ class MainFrame(wx.Frame):
 
 
 
+
+
+
 class StartFrame(wx.Frame):
     def __init__(self, *args, **kw):
         super(StartFrame, self).__init__(*args, **kw, size=(1200, 800))
@@ -203,6 +250,7 @@ class StartFrame(wx.Frame):
         vbox.Add(end_run_btn, 0, wx.ALIGN_CENTER | wx.ALL, 5)
 
         panel.SetSizer(vbox)
+        self.Centre()
 
     def on_end_run(self, event):
         self.Hide()
@@ -239,14 +287,29 @@ class PowerFrame(wx.Frame):
         self.Centre()
 
     def plot_graph(self):
-        # Plot power graph
+        threshold = 4
+        min_distance = 10
+        window_size = 10
+
         data1 = [(row['timestamp'], row['power']) for _, row in self.dataframes[0].iterrows()]
         data2 = [(row['timestamp'], row['power']) for _, row in self.dataframes[1].iterrows()]
 
-        power_data1 = wxplot.PolyLine(data1, colour='blue', legend='Run 1')
-        power_data2 = wxplot.PolyLine(data2, colour='red', legend='Run 2')
+        # Create plot lines for power data
+        pwr_data1 = wxplot.PolyLine(data1, colour='blue', legend='Run 1')
+        pwr_data2 = wxplot.PolyLine(data2, colour='red', legend='Run 2')
 
-        graphics = wxplot.PlotGraphics([power_data1, power_data2], "Power Data", "Time", "Power")
+        # Create plot lines for peaks and areas
+        peaks, heights, areas = max_power_per_step(self.dataframes[0], threshold, min_distance, window_size)
+        peak_data = [(peak, area) for peak, area in zip(peaks, areas)]
+
+        area_data = [(self.dataframes[0]['timestamp'][peak], area) for peak, area in zip(peaks, areas)]
+        peak_plot = wxplot.PolyMarker(peak_data, colour='green', marker='circle', legend='Peaks')
+        area_plot = wxplot.PolyLine(area_data, colour='orange', style=wx.DOT, legend='Area under Peak')
+        print(peak_data)
+
+
+        graphics = wxplot.PlotGraphics([pwr_data1, pwr_data2, peak_plot, area_plot], "Power Data", "Time", "Power")
+
         self.figure.enableLegend = True
         self.canvas.Draw(graphics)
 
