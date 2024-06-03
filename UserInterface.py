@@ -145,7 +145,7 @@ class MainFrame(wx.Frame):
         # Values to display
         self.values = {
             'Start Run': 'Start Run',
-            'Camera Setup': 'Camera Setup',
+            'Setup': 'Setup',
             'Stride Frequency': 'Stride Frequency',
             'Power': 'Power',
             'Acceleration': 'Acceleration',
@@ -161,7 +161,7 @@ class MainFrame(wx.Frame):
 
     def create_widgets(self, panel, top_sizer):
         for label, value in self.values.items():
-            if label in ['Start Run','Stride Frequency', 'Power', 'Acceleration', 'Camera Setup']:
+            if label in ['Start Run','Stride Frequency', 'Power', 'Acceleration', 'Setup']:
                 display_label = f'{label}'
                 btn = wx.Button(panel, label=display_label, size=(150, 50))
                 btn.SetFont(wx.Font(20, wx.DEFAULT, wx.NORMAL, wx.BOLD))
@@ -174,8 +174,8 @@ class MainFrame(wx.Frame):
                     btn.Bind(wx.EVT_BUTTON, self.on_power)
                 elif label == 'Acceleration':
                     btn.Bind(wx.EVT_BUTTON, self.on_acceleration)
-                # elif label == 'Camera Setup':
-                #     btn.Bind(wx.EVT_BUTTON, self.on_camera)
+                elif label == 'Setup':
+                    btn.Bind(wx.EVT_BUTTON, self.on_setup)
 
                 self.original_sizer.Add(btn, 0, wx.EXPAND | wx.ALL, 10)
             else:
@@ -228,13 +228,13 @@ class MainFrame(wx.Frame):
 
     def on_setup(self, event):
         self.Hide()
-        global_queue.put("CAMERA_SETUP")
+        global_queue.put("START_SETUP")
         self.setup = True
 
     def on_start(self, event):
         self.Hide()
         start_frame = StartFrame(None, title="Start Run")
-        global_queue.put("CAMERA_RECORD")
+        global_queue.put("START_RECORD")
         start_frame.Show()
 
 
