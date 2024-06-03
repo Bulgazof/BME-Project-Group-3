@@ -238,6 +238,7 @@ class MainFrame(wx.Frame):
         global_queue.put("START_IMU_SETUP")
         Cam_setup = False
         IMU_setup = False
+        self.setup = True
         while not Cam_setup or not IMU_setup:
             command = global_queue.get()
             if command == "CAMERA_SETUP_FINISHED":
@@ -246,11 +247,14 @@ class MainFrame(wx.Frame):
             elif command == "IMU_SETUP_FINISHED":
                 print("Got IMU Setup finished in UI")
                 IMU_setup = True
+            elif command == "IMU_SETUP_FAILED":
+                print("Got IMU Setup failed in UI")
+                self.setup = False
+                break
             else:
                 print(command)
                 global_queue.put(command)
                 time.sleep(0.1)
-        self.setup = True
         self.on_back()
 
     def on_start(self, event):
