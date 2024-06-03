@@ -7,6 +7,8 @@ import threading
 import time
 from scipy.signal import find_peaks
 from scipy.integrate import simps
+from oskars_helper_functions import plot_angles
+from angleCalculator import angleCalculator
 
 sampling_frequency = 60  # Hz
 var_names = ['acc_x', 'acc_y', 'acc_z', 'gyr_x', 'gyr_y', 'gyr_z', 'timestamp']  # Initiate variable names
@@ -129,7 +131,7 @@ class MainFrame(wx.Frame):
 
         # Adjust BoxSizer for the top row and GridSizer for the rest
         top_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.original_sizer = wx.GridSizer(rows=3, cols=2, hgap=20, vgap=20)
+        self.original_sizer = wx.GridSizer(rows=4, cols=2, hgap=20, vgap=20)
 
         # Example values
         global weightAsked  # Declare weightAsked as global to modify it inside the method
@@ -147,6 +149,7 @@ class MainFrame(wx.Frame):
             'Setup': 'Setup',
             'Stride Frequency': 'Stride Frequency',
             'Power': 'Power',
+            'Angle': 'Angle',
             'Acceleration': 'Acceleration',
             'Power step': power_step,
         }
@@ -160,7 +163,7 @@ class MainFrame(wx.Frame):
 
     def create_widgets(self, panel, top_sizer):
         for label, value in self.values.items():
-            if label in ['Start Run','Stride Frequency', 'Power', 'Acceleration', 'Setup']:
+            if label in ['Start Run','Stride Frequency', 'Power', 'Acceleration', 'Setup', 'Angle']:
                 display_label = f'{label}'
                 btn = wx.Button(panel, label=display_label, size=(150, 50))
                 btn.SetFont(wx.Font(20, wx.DEFAULT, wx.NORMAL, wx.BOLD))
@@ -175,6 +178,8 @@ class MainFrame(wx.Frame):
                     btn.Bind(wx.EVT_BUTTON, self.on_acceleration)
                 elif label == 'Setup':
                     btn.Bind(wx.EVT_BUTTON, self.on_setup)
+                elif label == 'Angle':
+                    btn.Bind(wx.EVT_BUTTON, self.on_angle)
 
                 self.original_sizer.Add(btn, 0, wx.EXPAND | wx.ALL, 10)
             else:
@@ -262,6 +267,12 @@ class MainFrame(wx.Frame):
         global_queue.put("START_CAMERA_RECORD")
         global_queue.put("START_IMU_RECORD")
         start_frame.Show()
+    def on_angle(self, event):
+        self.Hide()
+        angle_frame = AngleFrame(None, title="Angle")
+        angle_frame.Show()
+
+
 
 
 
@@ -450,7 +461,52 @@ class AccelerationFrame(wx.Frame):
         self.Hide()
         main_frame = MainFrame(None, title="Sensor Data Analysis")
         main_frame.Show()
+class AngleFrame(wx.Frame):
+    def __init__(self, *args, dataframes=None, **kw):
+        super(AngleFrame, self).__init__(*args, **kw, size=(1200, 800))  # Set the window size here
+        self.dataframes = dataframes
+        self.InitUI()
 
+    def InitUI(self):
+        panel = wx.Panel(self)
+
+        vbox = wx.BoxSizer(wx.VERTICAL)
+
+        self.figure = plt.figure()
+        self.canvas = wxplot.PlotCanvas(panel)
+
+        self.plot_graph()
+
+        vbox.Add(self.canvas, 1, wx.EXPAND)
+
+        back_btn = wx.Button(panel, label='Back', size=(150, 50))
+        back_btn.SetFont(wx.Font(20, wx.DEFAULT, wx.NORMAL, wx.BOLD))
+        back_btn.SetBackgroundColour(wx.Colour(230, 230, 250))
+        back_btn.Bind(wx.EVT_BUTTON, self.on_back)
+
+        vbox.Add(back_btn, 0, wx.ALIGN_CENTER | wx.TOP | wx.BOTTOM, 20)
+
+        panel.SetSizer(vbox)
+        self.Centre()
+
+    def plot_graph(self):
+        # Plot acceleration graph
+        angle_calculator = angleCalculator()
+        csv_file = "data/landmarks_2024-05-29_15-15-26.csv"
+        angles = angle_calculator.get_angle(csv_file, "chest", True)
+
+
+        acc_data1 = wxplot.PolyLine(angles, colour='blue', legend='Run 1')
+
+        graphics = wxplot.PlotGraphics([acc_data1], "Acceleration Data", "Time", "Acceleration")
+
+        self.figure.enableLegend = True
+        self.canvas.Draw(graphics)
+
+    def on_back(self, event):
+        self.Hide()
+        main_frame = MainFrame(None, title="Sensor Data Analysis")
+        main_frame.Show()
 
 def start_ui(queue):
     app = wx.App(False)
