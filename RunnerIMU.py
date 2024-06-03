@@ -12,9 +12,6 @@ class RunnerIMU:
 
     def __init__(self, pelvis_sensor, tibia_sensor, duration, steps):
         self.SENSORS_NAMES = [pelvis_sensor, tibia_sensor]
-        self.manager = SensorManager(self.SENSORS_NAMES)
-        self.manager.set_sample_rate(self.FREQUENCY)
-        self.manager.start()
         self.running = False
         self.step_num = steps
         self.record_duration = duration
@@ -22,6 +19,22 @@ class RunnerIMU:
         self.acc = {name: np.empty((0, 3)) for name in self.SENSORS_NAMES}
         self.gyr = {name: np.empty((0, 3)) for name in self.SENSORS_NAMES}
         self.data = {name: np.empty((0, 7)) for name in self.SENSORS_NAMES}
+        self.sensors_connected = False
+
+    def init_sensors(self):
+        '''
+
+        :return: True when finished and connected. False when finished and not connected
+        '''
+        try:
+            self.manager = SensorManager(self.SENSORS_NAMES)
+            self.manager.set_sample_rate(self.FREQUENCY)
+            self.manager.start()
+            return True
+        except ConnectionError:
+            return False
+        #     when done return True
+        # if fails, return False
 
     def update_measurements(self):
         measurements = self.manager.get_measurements()
@@ -77,12 +90,20 @@ class RunnerIMU:
     def listen_to_queue(self):
         while True:
             command = global_queue.get()
-            if command == "TOGGLE_RECORD":
+            if command == "START_SETUP":
+                if self.init_sensors():  # get stuck on this while initializing
+                    print("sensors initialized")
+                    self.sensors_connected = True
+                    global_queue.put("IMU_SETUP_FINISHED")
+                else:
+                    print("sensors initialization timed out")
+                    global_queue.put("IMU_SETUP_FAILED")
+            elif command == "TOGGLE_RECORD" and self.sensors_connected:
                 print("got record toggle in imu")
                 self.record()
             else:
                 global_queue.put(command)
-                time.sleep(0.1)
+                time.sleep(0.1)  # This should be outside the else block to avoid starvation
 
 def start_IMU(queue):
     global global_queue
