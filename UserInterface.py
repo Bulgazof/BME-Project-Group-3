@@ -261,7 +261,8 @@ class MainFrame(wx.Frame):
     def on_start(self, event):
         self.Hide()
         start_frame = StartFrame(None, title="Start Run")
-        global_queue.put("START_RECORD")
+        global_queue.put("START_CAMERA_RECORD")
+        global_queue.put("START_IMU_RECORD")
         start_frame.Show()
 
 

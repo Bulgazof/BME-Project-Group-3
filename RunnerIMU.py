@@ -99,7 +99,7 @@ class RunnerIMU:
                 else:
                     print("sensors initialization timed out")
                     global_queue.put("IMU_SETUP_FAILED")
-            elif command == "TOGGLE_RECORD" and self.sensors_connected:
+            elif command == "START_IMU_RECORD" and self.sensors_connected:
                 print("Got Record in IMU")
                 self.record()
             else:
