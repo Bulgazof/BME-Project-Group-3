@@ -31,21 +31,15 @@ def calc_force(df, mass):
     df['force'] = df['norm'] * mass
     return df
 
-
 def calc_speed(df, var_names, speed_names):
     for i, (var_name, speed_name) in enumerate(zip(var_names, speed_names)):
         df[speed_name] = integrate(df[var_name], 1 / sampling_frequency)
     return df
 
-
 def integrate(data, time_interval):
     integrated_data = 0
     integrated_data += data * time_interval
     return integrated_data
-
-
-
-
 
 def process_data_for_plotting(dataframe_list, speed_variables, acc_variables, runner_weight):
     for dataframe in dataframe_list:
@@ -80,8 +74,6 @@ def detect_first_peak(accel, threshold, min_distance):
     else:
         return None
 
-
-
 def max_block_power(runner_weight, speed_variables):
     df = load_data(r'../BME-Project-Group-3/data/pelvis_test.csv')
     acc_var_names = ['acc_x', 'acc_y', 'acc_z']  # Example variable names, replace with actual ones
@@ -114,9 +106,6 @@ def max_power_per_step(df, threshold, min_distance, window_size):
         areas.append(area)
 
     return peaks, heights, areas
-
-
-
 
 class MainFrame(wx.Frame):
     def __init__(self, *args, **kw):
@@ -265,11 +254,6 @@ class MainFrame(wx.Frame):
         global_queue.put("START_IMU_RECORD")
         start_frame.Show()
 
-
-
-
-
-
 class StartFrame(wx.Frame):
     def __init__(self, *args, **kw):
         super(StartFrame, self).__init__(*args, **kw, size=(1200, 800))
@@ -283,12 +267,33 @@ class StartFrame(wx.Frame):
         end_run_btn.Bind(wx.EVT_BUTTON, self.on_end_run)
 
         vbox.Add(end_run_btn, 0, wx.ALIGN_CENTER | wx.ALL, 5)
-
+        wx.CallAfter(self.show_steps_and_angle, panel)
         panel.SetSizer(vbox)
         self.Centre()
 
+        self.thread = threading.Thread(target=self.update_label_from_queue, daemon=True)
+        self.thread.start()
+
+    def show_steps_and_angle(self, panel):
+        self.debug_btn = wx.Button(panel, label=str(time.time()), size=(150, 50))
+        self.GetSizer().Add(self.debug_btn, 0, wx.ALIGN_CENTER | wx.ALL, 5)
+
+    def update_label_from_queue(self):
+        while True:
+            try:
+                #TODO 3 things:
+                # change this queue to be non blocking and not fuck up if empty
+                # check for command something like a dictionary with angleValue: 92.
+                # Add this command to the queue in the camtest class
+                label_time_debug = global_queue.get(timeout=1)
+                # Use wx.CallAfter to safely update the GUI from the thread
+                wx.CallAfter(self.debug_btn.SetLabel, label_time_debug)
+            except global_queue.Empty:
+                continue
+
     def on_end_run(self, event):
         self.Hide()
+        global_queue.put("STOP_CAMERA_RECORDING")
         main_frame = MainFrame(None, title="Sensor Data Analysis")
         main_frame.Show()
 

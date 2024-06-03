@@ -107,6 +107,9 @@ class Camera:
             self.prev_time = time.time()
 
     def run(self):
+        print("run started")
+        #TODO fix the live angle shower, see ui line 284 todo
+
         # Start the tone player
         self.player_1.start()
 
@@ -121,6 +124,15 @@ class Camera:
                 if cv2.waitKey(5) & 0xFF == 27:
                     print(f"Average Frame Rate: {self.cum_frame_time / self.frame}")
                     break
+                try:
+                    command = global_queue.get(False)
+                    if command == "STOP_CAMERA_RECORDING":
+                        print("Got Stop Recording in Camera")
+                        break
+                    else:
+                        global_queue.put(command)
+                except queue.Empty:
+                    pass
         self.cleanup()
 
     def setup(self):
@@ -164,16 +176,16 @@ class Camera:
                 global_queue.put(command)
                 time.sleep(0.1)
                 # global_queue.put("CAMERA_SETUP_FINISHED")
+
     def wait_for_record(self):
         while True:
             command = global_queue.get()
-            if command == "START_RECORD":
+            if command == "START_CAMERA_RECORD":
                 print("Got Record in Camera")
                 self.run()
             else:
                 global_queue.put(command)
                 time.sleep(0.1)
-
 
 if __name__ == "__main__":
     cam1 = Camera()

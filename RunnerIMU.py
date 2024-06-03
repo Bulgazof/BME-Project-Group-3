@@ -73,10 +73,9 @@ class RunnerIMU:
             return
         self.update_measurements()
         pelvis_y_accel = self.acc[self.SENSORS_NAMES[0]][:, 1]
-        peaks = self.detect_peaks(pelvis_y_accel, self.t_stamp[self.SENSORS_NAMES[0]], 4, 10)
+        peaks = self.detect_peaks(pelvis_y_accel, self.t_stamp[self.SENSORS_NAMES[0]], 3, 10)
         current_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         print("Updating measurements and saving to CSV...")
-        self.save_to_csv('FD92', f'data/live_data/{current_time}_pelvis.csv', peaks)
         self.save_to_csv('F30E', f'data/live_data/{current_time}_tibia.csv', peaks)
         self.running = False  # Stop the function after updating and saving
 
