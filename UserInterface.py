@@ -194,7 +194,7 @@ class MainFrame(wx.Frame):
         dlg.Destroy()
         return result
 
-    def on_back(self, event):
+    def on_back(self):
         self.Hide()
         main_frame = MainFrame(None, title="Sensor Data Analysis")
         main_frame.Show()
@@ -249,6 +249,7 @@ class MainFrame(wx.Frame):
                 IMU_setup = True
             elif command == "IMU_SETUP_FAILED":
                 print("Got IMU Setup failed in UI")
+                global_queue.put("STOP_CAMERA_SETUP")
                 self.setup = False
                 break
             else:

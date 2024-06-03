@@ -8,7 +8,7 @@ from datetime import datetime
 from angleCalculator import angleCalculator
 from AudioFiles import TonePlayer
 import threading
-
+import queue
 
 class Camera:
     def __init__(self):
@@ -133,7 +133,17 @@ class Camera:
             else:
                 cv2.imshow('Camera Setup Window', cv2.flip(image, 1))
                 if cv2.waitKey(5) & 0xFF == 27:
+                    global_queue.put("CAMERA_SETUP_FINISHED")
                     break
+            try:
+                command = global_queue.get(False)
+                if command == "STOP_CAMERA_SETUP":
+                    print("Got Stop Setup in Camera")
+                    break
+                else:
+                    global_queue.put(command)
+            except queue.Empty:
+                pass
         cv2.destroyAllWindows()
 
     def cleanup(self):
@@ -148,6 +158,8 @@ class Camera:
             if command == "START_CAMERA_SETUP":
                 print("Got Setup in Camera")
                 self.setup()
+            elif command == "STOP_CAMERA_SETUP":
+                print("Got Stop Setup in Camera")
             else:
                 global_queue.put(command)
                 time.sleep(0.1)

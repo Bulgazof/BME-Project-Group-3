@@ -10,8 +10,8 @@ class RunnerIMU:
     FREQUENCY = 60
     BUFFER_SIZE = FREQUENCY * 5
 
-    def __init__(self, pelvis_sensor, tibia_sensor, duration, steps):
-        self.SENSORS_NAMES = [pelvis_sensor, tibia_sensor]
+    def __init__(self, pelvis_sensor, duration, steps):
+        self.SENSORS_NAMES = [pelvis_sensor]
         self.running = False
         self.step_num = steps
         self.record_duration = duration
@@ -90,7 +90,8 @@ class RunnerIMU:
     def listen_to_queue(self):
         while True:
             command = global_queue.get()
-            if command == "START_SETUP":
+            if command == "START_IMU_SETUP":
+                print("Got Setup in IMU")
                 if self.init_sensors():  # get stuck on this while initializing
                     print("sensors initialized")
                     self.sensors_connected = True
@@ -99,7 +100,7 @@ class RunnerIMU:
                     print("sensors initialization timed out")
                     global_queue.put("IMU_SETUP_FAILED")
             elif command == "TOGGLE_RECORD" and self.sensors_connected:
-                print("got record toggle in imu")
+                print("Got Record in IMU")
                 self.record()
             else:
                 global_queue.put(command)
@@ -108,7 +109,7 @@ class RunnerIMU:
 def start_IMU(queue):
     global global_queue
     global_queue = queue
-    frame = RunnerIMU('FD92', 'F30E', 5, 10)
+    frame = RunnerIMU('F30E', 5, 10)
     imu_thread = threading.Thread(target=frame.listen_to_queue)
     imu_thread.start()
     print("IMU thread started")

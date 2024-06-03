@@ -18,7 +18,7 @@ if __name__ == "__main__":
     camera_thread.start()
 
     # Start the IMU thread
-    # imu_thread = threading.Thread(target=start_IMU, args=(big_queue,))
-    # imu_thread.start()
+    imu_thread = threading.Thread(target=start_IMU, args=(big_queue,))
+    imu_thread.start()
 
     ui_thread.join() # only stop main thread when ui thread stops.
