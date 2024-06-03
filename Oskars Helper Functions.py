@@ -49,5 +49,6 @@ if __name__ == "__main__":
     # # Plot angles
     # plot_angles(chest_angles, shin_left_angles, shin_right_angles, hip_left_angles, hip_right_angles,
     #             labels=["Chest", "Shin Left", "Shin Right", "Hip Left", "Hip Right"])
+    print("This is a test")
     angles = angle_calculator.get_angle(csv_file, "chest", True)
     plot_angles(angles, labels="chest")
