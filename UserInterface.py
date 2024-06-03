@@ -167,8 +167,6 @@ class MainFrame(wx.Frame):
                 if label == 'Start Run':
                     btn.SetBackgroundColour(wx.Colour(144, 238, 144))  # Set color to green
                     btn.Bind(wx.EVT_BUTTON, self.on_start)
-                else:
-                    btn.SetBackgroundColour(wx.Colour(230, 230, 250))
                 if label == 'Stride Frequency':
                     btn.Bind(wx.EVT_BUTTON, self.on_stride_frequency)
                 elif label == 'Power':
@@ -288,6 +286,59 @@ class StartFrame(wx.Frame):
         self.Centre()
 
     def on_end_run(self, event):
+        self.Hide()
+        main_frame = MainFrame(None, title="Sensor Data Analysis")
+        main_frame.Show()
+
+class StrideFrame(wx.Frame):
+    def __init__(self, *args, dataframes=None, acc_var_names=None, **kw):
+        super(StrideFrame, self).__init__(*args, **kw, size=(1200, 800))  # Set the window size here
+        self.dataframes = dataframes
+        self.acc_var_names = acc_var_names
+        self.InitUI()
+
+    def InitUI(self):
+        panel = wx.Panel(self)
+        vbox = wx.BoxSizer(wx.VERTICAL)
+
+        self.canvases = []
+        for _ in self.dataframes:
+            canvas = wxplot.PlotCanvas(panel)
+            canvas.SetInitialSize(size=(1200, 400))  # Adjust size as needed
+            self.canvases.append(canvas)
+            vbox.Add(canvas, 1, wx.EXPAND | wx.ALL, 10)
+
+        self.plot_graphs()
+
+        back_btn = wx.Button(panel, label='Back', size=(150, 50))
+        back_btn.SetFont(wx.Font(20, wx.DEFAULT, wx.NORMAL, wx.BOLD))
+        back_btn.SetBackgroundColour(wx.Colour(230, 230, 250))
+        back_btn.Bind(wx.EVT_BUTTON, self.on_back)
+
+        vbox.Add(back_btn, 0, wx.ALIGN_CENTER | wx.TOP | wx.BOTTOM, 20)
+
+        panel.SetSizer(vbox)
+        self.Centre()
+
+    def plot_graphs(self):
+        colors = ['blue', 'red','dark green']
+
+        for i, (df, canvas) in enumerate(zip(self.dataframes, self.canvases)):
+            graphics_list = []
+            for j, var_name in enumerate(self.acc_var_names):
+                x_data = df.index.values
+                y_data = df[var_name].values
+
+                if len(x_data) != len(y_data):
+                    raise ValueError(f"Data length mismatch: x_data length is {len(x_data)}, y_data length is {len(y_data)}")
+
+                line = wxplot.PolyLine(list(zip(x_data, y_data)), colour=colors[j % len(colors)], width=1)
+                graphics_list.append(line)
+
+            graphics = wxplot.PlotGraphics(graphics_list, title=f"Stride Frequency - Dataset {i+1}", xLabel="Index", yLabel="Acceleration")
+            canvas.Draw(graphics)
+
+    def on_back(self, event):
         self.Hide()
         main_frame = MainFrame(None, title="Sensor Data Analysis")
         main_frame.Show()
