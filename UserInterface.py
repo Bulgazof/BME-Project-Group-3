@@ -1,4 +1,5 @@
 import wx
+from RunnerIMU import RunnerIMU
 import wx.lib.plot as wxplot
 import numpy as np
 import pandas as pd
@@ -122,6 +123,7 @@ class MainFrame(wx.Frame):
     def __init__(self, *args, **kw):
         super(MainFrame, self).__init__(*args, **kw, size=(1200, 800))  # Set the window size here
         self.InitUI()
+        self.setup = False
 
     def InitUI(self):
         panel = wx.Panel(self)
@@ -143,7 +145,7 @@ class MainFrame(wx.Frame):
         # Values to display
         self.values = {
             'Start Run': 'Start Run',
-            'Camera Setup': 'Camera Setup',
+            'Setup': 'Setup',
             'Stride Frequency': 'Stride Frequency',
             'Power': 'Power',
             'Acceleration': 'Acceleration',
@@ -159,23 +161,24 @@ class MainFrame(wx.Frame):
 
     def create_widgets(self, panel, top_sizer):
         for label, value in self.values.items():
-            if label in ['Start Run', 'Stride Frequency', 'Power', 'Acceleration', 'Camera Setup']:
+            if label in ['Start Run','Stride Frequency', 'Power', 'Acceleration', 'Setup']:
                 display_label = f'{label}'
                 btn = wx.Button(panel, label=display_label, size=(150, 50))
                 btn.SetFont(wx.Font(20, wx.DEFAULT, wx.NORMAL, wx.BOLD))
+                btn.SetBackgroundColour(wx.Colour(230, 230, 250))
                 if label == 'Start Run':
                     btn.SetBackgroundColour(wx.Colour(144, 238, 144))  # Set color to green
                     btn.Bind(wx.EVT_BUTTON, self.on_start)
-                else:
-                    btn.SetBackgroundColour(wx.Colour(230, 230, 250))
                 if label == 'Stride Frequency':
                     btn.Bind(wx.EVT_BUTTON, self.on_stride_frequency)
+                elif label == 'Start run':
+                    btn.Bind(wx.EVT_BUTTON, self.on_start)
                 elif label == 'Power':
                     btn.Bind(wx.EVT_BUTTON, self.on_power)
                 elif label == 'Acceleration':
                     btn.Bind(wx.EVT_BUTTON, self.on_acceleration)
-                # elif label == 'Camera Setup':
-                #     btn.Bind(wx.EVT_BUTTON, self.on_camera)
+                elif label == 'Setup':
+                    btn.Bind(wx.EVT_BUTTON, self.on_setup)
 
                 self.original_sizer.Add(btn, 0, wx.EXPAND | wx.ALL, 10)
             else:
@@ -183,7 +186,6 @@ class MainFrame(wx.Frame):
                 lbl = wx.StaticText(panel, label=display_label)
                 lbl.SetFont(wx.Font(20, wx.DEFAULT, wx.NORMAL, wx.BOLD))
                 self.original_sizer.Add(lbl, 0, wx.ALIGN_CENTER | wx.ALL, 10)
-
     def ask(self, parent=None, message='', default_value=''):
         dlg = wx.TextEntryDialog(parent, message, value=default_value)
         if dlg.ShowModal() == wx.ID_OK:
@@ -200,7 +202,11 @@ class MainFrame(wx.Frame):
         df_pelvis = calc_norm(df_pelvis, acc_var_names, 'norm')
         df_pelvis_slow = calc_norm(df_pelvis_slow, acc_var_names, 'norm')
 
-        plot_multiple_stack([df_pelvis, df_pelvis_slow], acc_var_names, 'Stride Frequency')
+        dataframes = process_data_for_plotting([df_pelvis, df_pelvis_slow], speed_var_names, acc_var_names, weight)
+
+        self.Hide()
+        frequency_frame = StrideFrame(None, title="Power Data", dataframes=dataframes, acc_var_names=acc_var_names)
+        frequency_frame.Show()
 
     def on_power(self, event):
         df_pelvis = load_data(r'../BME-Project-Group-3/data/pelvis_test.csv')
@@ -208,6 +214,7 @@ class MainFrame(wx.Frame):
 
         df_pelvis = calc_norm(df_pelvis, acc_var_names, 'norm')
         df_pelvis_slow = calc_norm(df_pelvis_slow, acc_var_names, 'norm')
+
 
         dataframes = process_data_for_plotting([df_pelvis, df_pelvis_slow], speed_var_names, acc_var_names, weight)
 
@@ -226,9 +233,15 @@ class MainFrame(wx.Frame):
         acceleration_frame = AccelerationFrame(None, title="Acceleration Data", dataframes=[df_pelvis, df_pelvis_slow])
         acceleration_frame.Show()
 
+    def on_setup(self, event):
+        self.Hide()
+        global_queue.put("START_SETUP")
+        self.setup = True
+
     def on_start(self, event):
         self.Hide()
         start_frame = StartFrame(None, title="Start Run")
+        global_queue.put("START_RECORD")
         start_frame.Show()
 
 
@@ -254,6 +267,59 @@ class StartFrame(wx.Frame):
         self.Centre()
 
     def on_end_run(self, event):
+        self.Hide()
+        main_frame = MainFrame(None, title="Sensor Data Analysis")
+        main_frame.Show()
+
+class StrideFrame(wx.Frame):
+    def __init__(self, *args, dataframes=None, acc_var_names=None, **kw):
+        super(StrideFrame, self).__init__(*args, **kw, size=(1200, 800))  # Set the window size here
+        self.dataframes = dataframes
+        self.acc_var_names = acc_var_names
+        self.InitUI()
+
+    def InitUI(self):
+        panel = wx.Panel(self)
+        vbox = wx.BoxSizer(wx.VERTICAL)
+
+        self.canvases = []
+        for _ in self.dataframes:
+            canvas = wxplot.PlotCanvas(panel)
+            canvas.SetInitialSize(size=(1200, 400))  # Adjust size as needed
+            self.canvases.append(canvas)
+            vbox.Add(canvas, 1, wx.EXPAND | wx.ALL, 10)
+
+        self.plot_graphs()
+
+        back_btn = wx.Button(panel, label='Back', size=(150, 50))
+        back_btn.SetFont(wx.Font(20, wx.DEFAULT, wx.NORMAL, wx.BOLD))
+        back_btn.SetBackgroundColour(wx.Colour(230, 230, 250))
+        back_btn.Bind(wx.EVT_BUTTON, self.on_back)
+
+        vbox.Add(back_btn, 0, wx.ALIGN_CENTER | wx.TOP | wx.BOTTOM, 20)
+
+        panel.SetSizer(vbox)
+        self.Centre()
+
+    def plot_graphs(self):
+        colors = ['blue', 'red','dark green']
+
+        for i, (df, canvas) in enumerate(zip(self.dataframes, self.canvases)):
+            graphics_list = []
+            for j, var_name in enumerate(self.acc_var_names):
+                x_data = df.index.values
+                y_data = df[var_name].values
+
+                if len(x_data) != len(y_data):
+                    raise ValueError(f"Data length mismatch: x_data length is {len(x_data)}, y_data length is {len(y_data)}")
+
+                line = wxplot.PolyLine(list(zip(x_data, y_data)), colour=colors[j % len(colors)], width=1)
+                graphics_list.append(line)
+
+            graphics = wxplot.PlotGraphics(graphics_list, title=f"Stride Frequency - Dataset {i+1}", xLabel="Index", yLabel="Acceleration")
+            canvas.Draw(graphics)
+
+    def on_back(self, event):
         self.Hide()
         main_frame = MainFrame(None, title="Sensor Data Analysis")
         main_frame.Show()
@@ -322,7 +388,7 @@ class PowerFrame(wx.Frame):
 
 class AccelerationFrame(wx.Frame):
     def __init__(self, *args, dataframes=None, **kw):
-        super(AccelerationFrame, self).__init__(*args, **kw, size=(1200, 800))  # Set the window size here 
+        super(AccelerationFrame, self).__init__(*args, **kw, size=(1200, 800))  # Set the window size here
         self.dataframes = dataframes
         self.InitUI()
 
@@ -356,7 +422,6 @@ class AccelerationFrame(wx.Frame):
         acc_data1 = wxplot.PolyLine(data1, colour='blue', legend='Run 1')
         acc_data2 = wxplot.PolyLine(data2, colour='red', legend='Run 2')
 
-
         graphics = wxplot.PlotGraphics([acc_data1, acc_data2], "Acceleration Data", "Time", "Acceleration")
 
         self.figure.enableLegend = True
@@ -370,6 +435,9 @@ class AccelerationFrame(wx.Frame):
 
 if __name__ == "__main__":
     app = wx.App(False)
-    frame = MainFrame(None)
+    global global_queue
+    # global_queue = queue
+    frame = MainFrame(None,  title="Sensor Data Analysis")
     frame.Show()
+    print("UI thread started")
     app.MainLoop()
