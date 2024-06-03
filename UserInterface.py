@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import threading
-import scipy.signal as signal
+import time
 from scipy.signal import find_peaks
 from scipy.integrate import simps
 
@@ -194,6 +194,11 @@ class MainFrame(wx.Frame):
         dlg.Destroy()
         return result
 
+    def on_back(self, event):
+        self.Hide()
+        main_frame = MainFrame(None, title="Sensor Data Analysis")
+        main_frame.Show()
+
     def on_stride_frequency(self, event):
         df_pelvis = load_data(r'../BME-Project-Group-3/data/pelvis_test.csv')
         df_pelvis_slow = load_data(r'../BME-Project-Group-3/data/pelvis_slow.csv')
@@ -229,8 +234,24 @@ class MainFrame(wx.Frame):
 
     def on_setup(self, event):
         self.Hide()
-        global_queue.put("START_SETUP")
+        global_queue.put("START_CAMERA_SETUP")
+        global_queue.put("START_IMU_SETUP")
+        Cam_setup = False
+        IMU_setup = False
+        while not Cam_setup or not IMU_setup:
+            command = global_queue.get()
+            if command == "CAMERA_SETUP_FINISHED":
+                print("Got Camera Setup finished in UI")
+                Cam_setup = True
+            elif command == "IMU_SETUP_FINISHED":
+                print("Got IMU Setup finished in UI")
+                IMU_setup = True
+            else:
+                print(command)
+                global_queue.put(command)
+                time.sleep(0.1)
         self.setup = True
+        self.on_back()
 
     def on_start(self, event):
         self.Hide()

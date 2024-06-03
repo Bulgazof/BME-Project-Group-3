@@ -145,16 +145,22 @@ class Camera:
     def wait_for_setup(self):
         while True:
             command = global_queue.get()
-            if command == "START_SETUP":
+            if command == "START_CAMERA_SETUP":
                 print("Got Setup in Camera")
                 self.setup()
-
+            else:
+                global_queue.put(command)
+                time.sleep(0.1)
+                # global_queue.put("CAMERA_SETUP_FINISHED")
     def wait_for_record(self):
         while True:
             command = global_queue.get()
             if command == "START_RECORD":
                 print("Got Record in Camera")
                 self.run()
+            else:
+                global_queue.put(command)
+                time.sleep(0.1)
 
 
 if __name__ == "__main__":

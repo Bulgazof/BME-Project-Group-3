@@ -80,6 +80,9 @@ class RunnerIMU:
             if command == "TOGGLE_RECORD":
                 print("got record toggle in imu")
                 self.record()
+            else:
+                global_queue.put(command)
+                time.sleep(0.1)
 
 def start_IMU(queue):
     global global_queue
