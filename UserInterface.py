@@ -1,5 +1,4 @@
 import wx
-from RunnerIMU import RunnerIMU
 import wx.lib.plot as wxplot
 import numpy as np
 import pandas as pd
@@ -132,7 +131,7 @@ class MainFrame(wx.Frame):
         self.original_sizer = wx.GridSizer(rows=3, cols=2, hgap=20, vgap=20)
 
         # Example values
-        global weightAsked  # Declare weightAsked as global to modify it inside the method  
+        global weightAsked  # Declare weightAsked as global to modify it inside the method
         if not weightAsked:
             global weight
             weight = self.ask(message='Input your Weight')
@@ -160,15 +159,17 @@ class MainFrame(wx.Frame):
 
     def create_widgets(self, panel, top_sizer):
         for label, value in self.values.items():
-            if label in ['Start Run','Stride Frequency', 'Power', 'Acceleration', 'Camera Setup']:
+            if label in ['Start Run', 'Stride Frequency', 'Power', 'Acceleration', 'Camera Setup']:
                 display_label = f'{label}'
                 btn = wx.Button(panel, label=display_label, size=(150, 50))
                 btn.SetFont(wx.Font(20, wx.DEFAULT, wx.NORMAL, wx.BOLD))
-                btn.SetBackgroundColour(wx.Colour(230, 230, 250))
+                if label == 'Start Run':
+                    btn.SetBackgroundColour(wx.Colour(144, 238, 144))  # Set color to green
+                    btn.Bind(wx.EVT_BUTTON, self.on_start)
+                else:
+                    btn.SetBackgroundColour(wx.Colour(230, 230, 250))
                 if label == 'Stride Frequency':
                     btn.Bind(wx.EVT_BUTTON, self.on_stride_frequency)
-                elif label == 'Start run':
-                    btn.Bind(wx.EVT_BUTTON, self.on_start)
                 elif label == 'Power':
                     btn.Bind(wx.EVT_BUTTON, self.on_power)
                 elif label == 'Acceleration':
@@ -182,6 +183,7 @@ class MainFrame(wx.Frame):
                 lbl = wx.StaticText(panel, label=display_label)
                 lbl.SetFont(wx.Font(20, wx.DEFAULT, wx.NORMAL, wx.BOLD))
                 self.original_sizer.Add(lbl, 0, wx.ALIGN_CENTER | wx.ALL, 10)
+
     def ask(self, parent=None, message='', default_value=''):
         dlg = wx.TextEntryDialog(parent, message, value=default_value)
         if dlg.ShowModal() == wx.ID_OK:
@@ -206,7 +208,6 @@ class MainFrame(wx.Frame):
 
         df_pelvis = calc_norm(df_pelvis, acc_var_names, 'norm')
         df_pelvis_slow = calc_norm(df_pelvis_slow, acc_var_names, 'norm')
-
 
         dataframes = process_data_for_plotting([df_pelvis, df_pelvis_slow], speed_var_names, acc_var_names, weight)
 
@@ -300,12 +301,12 @@ class PowerFrame(wx.Frame):
 
         # Create plot lines for peaks and areas
         peaks, heights, areas = max_power_per_step(self.dataframes[0], threshold, min_distance, window_size)
-        peak_data = [(peak, area) for peak, area in zip(peaks, areas)]
+        peak_data = [(self.dataframes[0]['timestamp'][peak], heights[i]) for i, peak in enumerate(peaks)]
 
-        area_data = [(self.dataframes[0]['timestamp'][peak], area) for peak, area in zip(peaks, areas)]
-        peak_plot = wxplot.PolyMarker(peak_data, colour='green', marker='circle', legend='Peaks')
-        area_plot = wxplot.PolyLine(area_data, colour='orange', style=wx.DOT, legend='Area under Peak')
-        print(peak_data)
+        # Using heights instead of areas for y-values in area_data
+        area_data = [(self.dataframes[0]['timestamp'][peak], heights[i]) for i, peak in enumerate(peaks)]
+        peak_plot = wxplot.PolyMarker(peak_data, colour='Blue', marker='circle', legend='Peaks')
+        area_plot = wxplot.PolyLine(area_data, colour='blue', style=wx.DOT, legend='Area under Peak')
 
 
         graphics = wxplot.PlotGraphics([pwr_data1, pwr_data2, peak_plot, area_plot], "Power Data", "Time", "Power")
@@ -321,7 +322,7 @@ class PowerFrame(wx.Frame):
 
 class AccelerationFrame(wx.Frame):
     def __init__(self, *args, dataframes=None, **kw):
-        super(AccelerationFrame, self).__init__(*args, **kw, size=(1200, 800))  # Set the window size here
+        super(AccelerationFrame, self).__init__(*args, **kw, size=(1200, 800))  # Set the window size here 
         self.dataframes = dataframes
         self.InitUI()
 
@@ -354,6 +355,7 @@ class AccelerationFrame(wx.Frame):
 
         acc_data1 = wxplot.PolyLine(data1, colour='blue', legend='Run 1')
         acc_data2 = wxplot.PolyLine(data2, colour='red', legend='Run 2')
+
 
         graphics = wxplot.PlotGraphics([acc_data1, acc_data2], "Acceleration Data", "Time", "Acceleration")
 
