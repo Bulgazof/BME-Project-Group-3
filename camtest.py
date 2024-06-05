@@ -35,14 +35,6 @@ class Camera:
         # Initialize angle calculator
         self.angle_calculator = angleCalculator()
 
-        # Setup file names for video and CSV outputs
-        current_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        self.output_filename = f'data/live_data/{current_time}_recording.mp4'
-        self.csv_filename = f'data/live_data/{current_time}_landmarks.csv'
-
-        # Initialize video writer
-        self.fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-        self.output_video = cv2.VideoWriter(self.output_filename, self.fourcc, 20.0, (640, 480))
 
     def save_landmarks_to_csv(self, lm_arr):
         # Check if CSV file already exists
@@ -108,6 +100,15 @@ class Camera:
 
     def run(self):
         print("run started")
+        # Setup file names for video and CSV outputs
+        current_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        self.output_filename = f'data/video_data/{current_time}_recording.mp4'
+        self.csv_filename = f'data/angle_data/{current_time}_landmarks.csv'
+
+        # Initialize video writer
+        self.fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+        self.output_video = cv2.VideoWriter(self.output_filename, self.fourcc, 20.0, (640, 480))
+
         #TODO fix the live angle shower, see ui line 284 todo
 
         # Start the tone player
