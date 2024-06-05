@@ -62,13 +62,18 @@ class RunnerIMU:
         if len(peaks) > 0:
             if len(peaks) >= self.step_num:
                 desired_peak = peaks[self.step_num]
+                print("Found enough peaks")
             else:
-                desired_peak = peaks[len(peaks)]
+                desired_peak = peaks[-1]
+                print("Found peaks but not enough")
             num_rows_to_save = int(desired_peak * self.FREQUENCY)
         else:
+            print("Didn't find peaks")
             num_rows_to_save = len(self.data)
+            print(f"saving {num_rows_to_save} rows")
         with open(file_path, mode='w', newline='') as file:
             writer = csv.writer(file)
+            print("Saving IMU data to CSV...")
             for row in self.data[sensor_name][:num_rows_to_save]:
                 writer.writerow(row)
 
@@ -78,8 +83,9 @@ class RunnerIMU:
             return
         self.update_measurements()
         pelvis_y_accel = self.acc[self.SENSORS_NAMES[0]][:, 1]
-        peaks = self.detect_peaks(pelvis_y_accel, self.t_stamp[self.SENSORS_NAMES[0]], 3, 10)
-
+        threshold = max(pelvis_y_accel) - (max(pelvis_y_accel) * 0.6)
+        print(f"Threshold: {threshold}")
+        peaks = self.detect_peaks(pelvis_y_accel, self.t_stamp[self.SENSORS_NAMES[0]], threshold, 10)
         print("Updating measurements and saving to CSV...")
         self.save_to_csv('F30E', f'data/IMU_data/{self.current_time}_tibia.csv', peaks)
         print("Saved IMU data")
