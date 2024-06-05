@@ -7,7 +7,6 @@ import threading
 import time
 from scipy.signal import find_peaks
 from scipy.integrate import simps
-from oskars_helper_functions import plot_angles
 from oskars_helper_functions import fileFinder
 from angleCalculator import angleCalculator
 import sys
