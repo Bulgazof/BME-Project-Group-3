@@ -60,7 +60,10 @@ class RunnerIMU:
 
     def save_to_csv(self, sensor_name, file_path, peaks):
         if len(peaks) > 0:
-            desired_peak = peaks[self.step_num]
+            if len(peaks) >= self.step_num:
+                desired_peak = peaks[self.step_num]
+            else:
+                desired_peak = peaks[len(peaks)]
             num_rows_to_save = int(desired_peak * self.FREQUENCY)
         else:
             num_rows_to_save = len(self.data)
@@ -79,6 +82,7 @@ class RunnerIMU:
 
         print("Updating measurements and saving to CSV...")
         self.save_to_csv('F30E', f'data/IMU_data/{self.current_time}_tibia.csv', peaks)
+        print("Saved IMU data")
         self.running = False  # Stop the function after updating and saving
 
     def record(self):
