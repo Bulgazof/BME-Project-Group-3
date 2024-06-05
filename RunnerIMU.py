@@ -20,6 +20,7 @@ class RunnerIMU:
         self.gyr = {name: np.empty((0, 3)) for name in self.SENSORS_NAMES}
         self.data = {name: np.empty((0, 7)) for name in self.SENSORS_NAMES}
         self.sensors_connected = False
+        self.current_time = None
 
     def init_sensors(self):
         '''
@@ -74,9 +75,9 @@ class RunnerIMU:
         self.update_measurements()
         pelvis_y_accel = self.acc[self.SENSORS_NAMES[0]][:, 1]
         peaks = self.detect_peaks(pelvis_y_accel, self.t_stamp[self.SENSORS_NAMES[0]], 3, 10)
-        current_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+
         print("Updating measurements and saving to CSV...")
-        self.save_to_csv('F30E', f'data/live_data/{current_time}_tibia.csv', peaks)
+        self.save_to_csv('F30E', f'data/live_data/{self.current_time}_tibia.csv', peaks)
         self.running = False  # Stop the function after updating and saving
 
     def record(self):
@@ -84,6 +85,7 @@ class RunnerIMU:
             print("Starting the recording...")
             self.manager._clear_queue()
             self.running = True
+            self.current_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
             self.run_analysis()
 
     def listen_to_queue(self):
