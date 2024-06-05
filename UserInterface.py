@@ -7,6 +7,7 @@ import threading
 import time
 from scipy.signal import find_peaks
 from scipy.integrate import simps
+from queue import Empty
 
 sampling_frequency = 60  # Hz
 var_names = ['acc_x', 'acc_y', 'acc_z', 'gyr_x', 'gyr_y', 'gyr_z', 'timestamp']  # Initiate variable names
@@ -271,25 +272,10 @@ class StartFrame(wx.Frame):
         panel.SetSizer(vbox)
         self.Centre()
 
-        self.thread = threading.Thread(target=self.update_label_from_queue, daemon=True)
-        self.thread.start()
 
     def show_steps_and_angle(self, panel):
         self.debug_btn = wx.Button(panel, label=str(time.time()), size=(150, 50))
         self.GetSizer().Add(self.debug_btn, 0, wx.ALIGN_CENTER | wx.ALL, 5)
-
-    def update_label_from_queue(self):
-        while True:
-            try:
-                #TODO 3 things:
-                # change this queue to be non blocking and not fuck up if empty
-                # check for command something like a dictionary with angleValue: 92.
-                # Add this command to the queue in the camtest class
-                label_time_debug = global_queue.get(timeout=1)
-                # Use wx.CallAfter to safely update the GUI from the thread
-                wx.CallAfter(self.debug_btn.SetLabel, label_time_debug)
-            except global_queue.Empty:
-                continue
 
     def on_end_run(self, event):
         self.Hide()
