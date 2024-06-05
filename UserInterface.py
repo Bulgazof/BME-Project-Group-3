@@ -227,7 +227,7 @@ class MainFrame(wx.Frame):
         power_frame.Show()
 
     def on_power(self, event):
-        file1, file2 = fileFinder(r'../BME-Project-Group-3/data/IMU')
+        file1, file2 = fileFinder(r'data/IMU_data')
         df_pelvis = load_data(file1)
         df_pelvis_slow = load_data(file2)
 
@@ -241,7 +241,7 @@ class MainFrame(wx.Frame):
         power_frame.Show()
 
     def on_acceleration(self, event):
-        file1, file2 = fileFinder(r'../BME-Project-Group-3/data/IMU')
+        file1, file2 = fileFinder(r'data/IMU_data')
         df_pelvis = load_data(file1)
         df_pelvis_slow = load_data(file2)
 
@@ -559,7 +559,7 @@ class AngleFrame(wx.Frame):
     def plot_graph(self):
         # Plot acceleration graph 
         angle_calculator = angleCalculator()
-        file1, file2 = fileFinder(r'../BME-Project-Group-3/data/Angle')
+        file1, file2 = fileFinder(r'data/angle_data')
         df_pelvis = load_data(file1)
         df_pelvis_slow = load_data(file2)
         angles1 = angle_calculator.get_angle(file1, "chest", True)
