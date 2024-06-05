@@ -23,7 +23,7 @@ class TonePlayer:
         self.base_pitch = base_pitch
         self.beep_triple = 0
         self.thread = None
-        self.path = ".././data/pelvis"
+        self.path = "data/"
         self.data = self.fileFinder()
         self.detect_peaks()
 
@@ -75,7 +75,7 @@ class TonePlayer:
             self.thread.daemon = True  # Ensure the thread exits when the main program does
             self.thread.start()
 
-    def detect_peaks(self, threshold=4, min_distance=10):
+    def detect_peaks(self, threshold=3, min_distance=5):
         """
         Detect peaks and set step intervals.
         :param threshold: threshold to activate peak
@@ -84,10 +84,11 @@ class TonePlayer:
         if isinstance(self.data, str) and self.data.endswith(".csv"):
             print("CSV FOUND")
             run = pd.read_csv(self.data)
-            accel = run['acc_y']
-            time = pd.to_datetime(run['timestamp'])
+            accel = run.iloc[:,1]
+            time = run.iloc[:,6]
             stride_peaks, _ = find_peaks(accel, height=threshold, distance=min_distance)
-            peak_times = time.iloc[stride_peaks].astype(int) / 10**9  # Convert to seconds
+            peak_times = time.iloc[stride_peaks]   # Convert to seconds
+            print(peak_times)
             distances = np.diff(peak_times)
             print(distances)
         else:
@@ -99,19 +100,15 @@ class TonePlayer:
             files = os.listdir(self.path)
             # Filter out non-file entries (like directories)
             files = [f for f in files if os.path.isfile(os.path.join(self.path, f))]
-            print(files)
-            if not files:
-                return [1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3]
 
             def extract_datetime(filename):
                 timestamp_str = filename[:19]  # Extract yyyy-mm-dd-hh-mm-ss
                 return datetime.strptime(timestamp_str, "%Y-%m-%d-%H-%M-%S")
 
             sorted_files = sorted(files, key=extract_datetime, reverse=True)
-
+            print(sorted_files[0])
             # Return the full path of the most recent file
             return os.path.join(self.path, sorted_files[0])
 
         except Exception as e:
             print(f"An error occurred: {e}")
-            return [1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3]

@@ -7,4 +7,6 @@ player = TonePlayer()
 
 # Calls threading
 player.start()
+while True:
+    time.sleep(0.1)
 
