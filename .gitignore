@@ -3,3 +3,4 @@
 /workspace.xml
 .idea/*
 /data/live_data/*
+__pycache__/

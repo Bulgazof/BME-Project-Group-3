@@ -7,6 +7,9 @@ import threading
 import time
 from scipy.signal import find_peaks
 from scipy.integrate import simps
+from oskars_helper_functions import plot_angles
+from angleCalculator import angleCalculator
+import sys
 from queue import Empty
 
 sampling_frequency = 60  # Hz
@@ -119,7 +122,7 @@ class MainFrame(wx.Frame):
 
         # Adjust BoxSizer for the top row and GridSizer for the rest
         top_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.original_sizer = wx.GridSizer(rows=3, cols=2, hgap=20, vgap=20)
+        self.original_sizer = wx.GridSizer(rows=4, cols=2, hgap=20, vgap=20)
 
         # Example values
         global weightAsked  # Declare weightAsked as global to modify it inside the method
@@ -137,8 +140,10 @@ class MainFrame(wx.Frame):
             'Setup': 'Setup',
             'Stride Frequency': 'Stride Frequency',
             'Power': 'Power',
+            'Angle': 'Angle',
             'Acceleration': 'Acceleration',
             'Power step': power_step,
+            'Close Program': 'Close Program',
         }
 
         self.create_widgets(panel, top_sizer)
@@ -150,15 +155,13 @@ class MainFrame(wx.Frame):
 
     def create_widgets(self, panel, top_sizer):
         for label, value in self.values.items():
-            if label in ['Start Run','Stride Frequency', 'Power', 'Acceleration', 'Setup']:
+            if label in ['Start Run','Stride Frequency', 'Power', 'Acceleration', 'Setup', 'Angle', 'Close Program']:
                 display_label = f'{label}'
                 btn = wx.Button(panel, label=display_label, size=(150, 50))
                 btn.SetFont(wx.Font(20, wx.DEFAULT, wx.NORMAL, wx.BOLD))
                 if label == 'Start Run':
                     btn.SetBackgroundColour(wx.Colour(144, 238, 144))  # Set color to green
                     btn.Bind(wx.EVT_BUTTON, self.on_start)
-                else:
-                    btn.SetBackgroundColour(wx.Colour(230, 230, 250))
                 if label == 'Stride Frequency':
                     btn.Bind(wx.EVT_BUTTON, self.on_stride_frequency)
                 elif label == 'Power':
@@ -167,6 +170,10 @@ class MainFrame(wx.Frame):
                     btn.Bind(wx.EVT_BUTTON, self.on_acceleration)
                 elif label == 'Setup':
                     btn.Bind(wx.EVT_BUTTON, self.on_setup)
+                elif label == 'Angle':
+                    btn.Bind(wx.EVT_BUTTON, self.on_angle)
+                elif label == 'Close Program':
+                    btn.Bind(wx.EVT_BUTTON, self.on_close)
 
                 self.original_sizer.Add(btn, 0, wx.EXPAND | wx.ALL, 10)
             else:
@@ -183,6 +190,8 @@ class MainFrame(wx.Frame):
             result = None
         dlg.Destroy()
         return result
+    def on_close(self, event):
+        self.Close()
 
     def on_back(self):
         self.Hide()
@@ -190,16 +199,21 @@ class MainFrame(wx.Frame):
         main_frame.Show()
 
     def on_stride_frequency(self, event):
-        df_pelvis = load_data(r'../BME-Project-Group-3/data/pelvis_test.csv')
+        df_pelvis = load_data(r'../BME-Project-Group-3/data/pelvis.csv')
         df_pelvis_slow = load_data(r'../BME-Project-Group-3/data/pelvis_slow.csv')
 
         df_pelvis = calc_norm(df_pelvis, acc_var_names, 'norm')
         df_pelvis_slow = calc_norm(df_pelvis_slow, acc_var_names, 'norm')
 
-        plot_multiple_stack([df_pelvis, df_pelvis_slow], acc_var_names, 'Stride Frequency')
+        dataframes = process_data_for_plotting([df_pelvis, df_pelvis_slow], speed_var_names, acc_var_names, weight)
+
+        self.Hide()
+        power_frame = StrideFrame(None, title="Stride Data", dataframes=dataframes,
+                                  acc_var_names=acc_var_names)  # Pass acc_var_names here
+        power_frame.Show()
 
     def on_power(self, event):
-        df_pelvis = load_data(r'../BME-Project-Group-3/data/pelvis_test.csv')
+        df_pelvis = load_data(r'../BME-Project-Group-3/data/pelvis.csv')
         df_pelvis_slow = load_data(r'../BME-Project-Group-3/data/pelvis_slow.csv')
 
         df_pelvis = calc_norm(df_pelvis, acc_var_names, 'norm')
@@ -212,7 +226,7 @@ class MainFrame(wx.Frame):
         power_frame.Show()
 
     def on_acceleration(self, event):
-        df_pelvis = load_data(r'../BME-Project-Group-3/data/pelvis_test.csv')
+        df_pelvis = load_data(r'../BME-Project-Group-3/data/pelvis.csv')
         df_pelvis_slow = load_data(r'../BME-Project-Group-3/data/pelvis_slow.csv')
 
         df_pelvis = calc_norm(df_pelvis, acc_var_names, 'norm')
@@ -254,6 +268,11 @@ class MainFrame(wx.Frame):
         global_queue.put("START_CAMERA_RECORD")
         global_queue.put("START_IMU_RECORD")
         start_frame.Show()
+    def on_angle(self, event):
+        self.Hide()
+        angle_frame = AngleFrame(None, title="Angle")
+        angle_frame.Show()
+
 
 class StartFrame(wx.Frame):
     def __init__(self, *args, **kw):
@@ -280,6 +299,59 @@ class StartFrame(wx.Frame):
     def on_end_run(self, event):
         self.Hide()
         global_queue.put("STOP_CAMERA_RECORDING")
+        main_frame = MainFrame(None, title="Sensor Data Analysis")
+        main_frame.Show()
+
+class StrideFrame(wx.Frame):
+    def __init__(self, *args, dataframes=None, acc_var_names=None, **kw):
+        super(StrideFrame, self).__init__(*args, **kw, size=(1200, 800))  # Set the window size here
+        self.dataframes = dataframes
+        self.acc_var_names = acc_var_names  # Ensure this is set
+        self.InitUI()
+
+    def InitUI(self):
+        panel = wx.Panel(self)
+        vbox = wx.BoxSizer(wx.VERTICAL)
+
+        self.canvases = []
+        for _ in self.dataframes:
+            canvas = wxplot.PlotCanvas(panel)
+            canvas.SetInitialSize(size=(1200, 400))  # Adjust size as needed
+            self.canvases.append(canvas)
+            vbox.Add(canvas, 1, wx.EXPAND | wx.ALL, 10)
+
+        self.plot_graphs()
+
+        back_btn = wx.Button(panel, label='Back', size=(150, 50))
+        back_btn.SetFont(wx.Font(20, wx.DEFAULT, wx.NORMAL, wx.BOLD))
+        back_btn.SetBackgroundColour(wx.Colour(230, 230, 250))
+        back_btn.Bind(wx.EVT_BUTTON, self.on_back)
+
+        vbox.Add(back_btn, 0, wx.ALIGN_CENTER | wx.TOP | wx.BOTTOM, 20)
+
+        panel.SetSizer(vbox)
+        self.Centre()
+
+    def plot_graphs(self):
+        colors = ['blue', 'red','dark green']
+
+        for i, (df, canvas) in enumerate(zip(self.dataframes, self.canvases)):
+            graphics_list = []
+            for j, var_name in enumerate(self.acc_var_names):
+                x_data = df.index.values
+                y_data = df[var_name].values
+
+                if len(x_data) != len(y_data):
+                    raise ValueError(f"Data length mismatch: x_data length is {len(x_data)}, y_data length is {len(y_data)}")
+
+                line = wxplot.PolyLine(list(zip(x_data, y_data)), colour=colors[j % len(colors)], width=1)
+                graphics_list.append(line)
+
+            graphics = wxplot.PlotGraphics(graphics_list, title=f"Stride Frequency - Dataset {i+1}", xLabel="Index", yLabel="Acceleration")
+            canvas.Draw(graphics)
+
+    def on_back(self, event):
+        self.Hide()
         main_frame = MainFrame(None, title="Sensor Data Analysis")
         main_frame.Show()
 
@@ -390,7 +462,52 @@ class AccelerationFrame(wx.Frame):
         self.Hide()
         main_frame = MainFrame(None, title="Sensor Data Analysis")
         main_frame.Show()
+class AngleFrame(wx.Frame):
+    def __init__(self, *args, dataframes=None, **kw):
+        super(AngleFrame, self).__init__(*args, **kw, size=(1200, 800))  # Set the window size here
+        self.dataframes = dataframes
+        self.InitUI()
 
+    def InitUI(self):
+        panel = wx.Panel(self)
+
+        vbox = wx.BoxSizer(wx.VERTICAL)
+
+        self.figure = plt.figure()
+        self.canvas = wxplot.PlotCanvas(panel)
+
+        self.plot_graph()
+
+        vbox.Add(self.canvas, 1, wx.EXPAND)
+
+        back_btn = wx.Button(panel, label='Back', size=(150, 50))
+        back_btn.SetFont(wx.Font(20, wx.DEFAULT, wx.NORMAL, wx.BOLD))
+        back_btn.SetBackgroundColour(wx.Colour(230, 230, 250))
+        back_btn.Bind(wx.EVT_BUTTON, self.on_back)
+
+        vbox.Add(back_btn, 0, wx.ALIGN_CENTER | wx.TOP | wx.BOTTOM, 20)
+
+        panel.SetSizer(vbox)
+        self.Centre()
+
+    def plot_graph(self):
+        # Plot acceleration graph
+        angle_calculator = angleCalculator()
+        csv_file = "data/landmarks_2024-05-29_15-15-26.csv"
+        angles = angle_calculator.get_angle(csv_file, "chest", True)
+
+
+        acc_data1 = wxplot.PolyLine(angles, colour='blue', legend='Run 1')
+
+        graphics = wxplot.PlotGraphics([acc_data1], "Acceleration Data", "Time", "Acceleration")
+
+        self.figure.enableLegend = True
+        self.canvas.Draw(graphics)
+
+    def on_back(self, event):
+        self.Hide()
+        main_frame = MainFrame(None, title="Sensor Data Analysis")
+        main_frame.Show()
 
 def start_ui(queue):
     app = wx.App(False)
