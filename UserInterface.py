@@ -72,7 +72,7 @@ def plot_multiple_stack(datasets, variables, title):
         ax.set_title(f'{title} - Dataset: {i + 1}')  # Set title for each subplot
 
     plt.xlabel('Time')  # Common x-label for all subplots
-    plt.tight_layout()  # Adjust layout to prevent overlap
+    plt.tight_layout()  # Adjust layout to prevent overlap 
     plt.show()
 
 def detect_first_peak(accel, threshold, min_distance):
