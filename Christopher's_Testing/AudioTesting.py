@@ -1,7 +1,7 @@
 from AudioFiles import TonePlayer
 import time
 
-player = TonePlayer()
+player = TonePlayer(2)
 # player.detect_peaks(".././data/2024-06-02-14-12-03pelvis_slow_labels.csv")
 
 

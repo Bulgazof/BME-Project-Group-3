@@ -12,10 +12,11 @@ class TonePlayer:
     This class is used for the generation of tones when the user is running, giving audio feedback.
     """
 
-    def __init__(self, base_pitch=440, sample_rate=44100):
+    def __init__(self,scale = 1, base_pitch=440, sample_rate=44100):
         """
         Initializes the TonePlayer with the desired sample rate.
         """
+        self.scale = scale
         self.sample_rate = sample_rate
         self.current_step = 0
         self.last_play_time = time.time()
@@ -26,7 +27,7 @@ class TonePlayer:
         self.path = "data/"
         self.data = self.fileFinder()
         self.detect_peaks()
-
+        self.readying = True
     def play_tone(self):
         """
         Generates and plays a sound based on the current step and base pitch.
@@ -40,31 +41,49 @@ class TonePlayer:
             sd.wait()  # Wait until the sound has finished playing
 
             self.last_play_time = time.time()
-            self.current_step += 1
+            if self.readying is not True:
+                self.current_step += 1
 
         except Exception as e:
             print(f"Error in play_tone: {e}")
 
     def play_loop(self):
         """
-        Plays the tones at the interval requested
-        :return:
+        Plays the tones at the interval requested.
         """
         while True:
-            # The normal beeps for while leaning over
-            if self.current_step < len(self.step_interval):
-                elapsed_time = time.time() - self.last_play_time
-                if elapsed_time >= self.step_interval[self.current_step]:  # Index over one
+            current_time = time.time()
+            if self.readying:
+                # Normal beeps while leaning over
+                if current_time - self.last_play_time > 3:
+                    self.base_pitch = 440
                     self.play_tone()
-                else:
-                    time.sleep(0.01)
-            elif self.beep_triple < 3:
-                # Beeps thrice once out of the initial stage
-                self.base_pitch = 880
-                self.play_tone()
-                self.beep_triple += 1
+                    time.sleep(0.25)
+                    self.play_tone()
+                    time.sleep(0.25)
+                    self.base_pitch = 880
+                    self.play_tone()
+                    self.base_pitch = 440
+                    self.current_step = 0
+                    self.last_play_time = current_time  # Update last play time
+                    self.readying = False
             else:
-                time.sleep(0.01)
+                if self.current_step < len(self.step_interval):
+                    elapsed_time = current_time - self.last_play_time
+                    if elapsed_time >= self.step_interval[self.current_step]:
+                        self.play_tone()
+                        self.last_play_time = current_time  # Update last play time
+                        print(self.current_step)
+                    else:
+                        time.sleep(0.001)
+                elif self.beep_triple < 3:
+                    # Beeps thrice once out of the initial stage
+                    self.base_pitch = 880
+                    self.play_tone()
+                    self.beep_triple += 1
+                    self.last_play_time = current_time  # Update last play time
+                else:
+                    time.sleep(0.001)
 
     def start(self):
         """
@@ -93,7 +112,7 @@ class TonePlayer:
             print(distances)
         else:
             distances = self.data
-        self.step_interval = distances
+        self.step_interval = distances * self.scale
 
     def fileFinder(self):
         try:
