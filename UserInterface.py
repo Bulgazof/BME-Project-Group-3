@@ -217,7 +217,7 @@ class MainFrame(wx.Frame):
 
         self.Hide()
         power_frame = StrideFrame(None, title="Stride Data", dataframes=dataframes,
-                                  acc_var_names=acc_var_names)  # Pass acc_var_names here  
+                                  acc_var_names=acc_var_names)  # Pass acc_var_names here
         power_frame.Show()
 
     def on_power(self, event):
