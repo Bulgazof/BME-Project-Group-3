@@ -36,7 +36,7 @@ def fileFinder(path):
 
         def extract_datetime(filename):
             timestamp_str = filename[:19]  # Extract yyyy-mm-dd-hh-mm-ss
-            return datetime.strptime(timestamp_str, "%Y-%m-%d-%H-%M-%S")
+            return datetime.strptime(timestamp_str, "%Y-%m-%d_%H-%M-%S")
 
         sorted_files = sorted(files, key=extract_datetime, reverse=True)
         print(sorted_files[0])
@@ -45,9 +45,7 @@ def fileFinder(path):
 
     except Exception as e:
         print(f"An error occurred: {e}")
-def IMUFileFinder():
-    file1, file2 = fileFinder(r'../BME-Project-Group-3/data/IMU')
-    return file1, file2
+
 # Example usage
 if __name__ == "__main__":
     # Load CSV file
