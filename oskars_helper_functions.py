@@ -26,6 +26,23 @@ def plot_angles(*angles, labels=None, title="Angles Over Time", xlabel="Time", y
     plt.grid(True)
     plt.show()
 
+    def fileFinder(self):
+        try:
+            files = os.listdir(self.path)
+            # Filter out non-file entries (like directories)
+            files = [f for f in files if os.path.isfile(os.path.join(self.path, f))]
+
+            def extract_datetime(filename):
+                timestamp_str = filename[:19]  # Extract yyyy-mm-dd-hh-mm-ss
+                return datetime.strptime(timestamp_str, "%Y-%m-%d-%H-%M-%S")
+
+            sorted_files = sorted(files, key=extract_datetime, reverse=True)
+            print(sorted_files[0])
+            # Return the full path of the most recent file
+            return os.path.join(self.path, sorted_files[0])
+
+        except Exception as e:
+            print(f"An error occurred: {e}")
 
 # Example usage
 if __name__ == "__main__":
