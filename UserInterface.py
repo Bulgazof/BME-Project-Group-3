@@ -7,7 +7,7 @@ import threading
 import time
 from scipy.signal import find_peaks
 from scipy.integrate import simps
-from oskars_helper_functions import plot_angles
+from oskars_helper_functions import fileFinder
 from angleCalculator import angleCalculator
 import sys
 from queue import Empty
@@ -199,6 +199,9 @@ class MainFrame(wx.Frame):
         main_frame.Show()
 
     def on_stride_frequency(self, event):
+        # file1, file2 = fileFinder(r'../BME-Project-Group-3/data/IMU')
+
+        #change later
         df_pelvis = load_data(r'../BME-Project-Group-3/data/pelvis.csv')
         df_pelvis_slow = load_data(r'../BME-Project-Group-3/data/pelvis_slow.csv')
 
@@ -213,8 +216,9 @@ class MainFrame(wx.Frame):
         power_frame.Show()
 
     def on_power(self, event):
-        df_pelvis = load_data(r'../BME-Project-Group-3/data/pelvis.csv')
-        df_pelvis_slow = load_data(r'../BME-Project-Group-3/data/pelvis_slow.csv')
+        file1, file2 = fileFinder(r'data/IMU_data')
+        df_pelvis = load_data(file1)
+        df_pelvis_slow = load_data(file2)
 
         df_pelvis = calc_norm(df_pelvis, acc_var_names, 'norm')
         df_pelvis_slow = calc_norm(df_pelvis_slow, acc_var_names, 'norm')
@@ -226,8 +230,9 @@ class MainFrame(wx.Frame):
         power_frame.Show()
 
     def on_acceleration(self, event):
-        df_pelvis = load_data(r'../BME-Project-Group-3/data/pelvis.csv')
-        df_pelvis_slow = load_data(r'../BME-Project-Group-3/data/pelvis_slow.csv')
+        file1, file2 = fileFinder(r'data/IMU_data')
+        df_pelvis = load_data(file1)
+        df_pelvis_slow = load_data(file2)
 
         df_pelvis = calc_norm(df_pelvis, acc_var_names, 'norm')
         df_pelvis_slow = calc_norm(df_pelvis_slow, acc_var_names, 'norm')
@@ -307,6 +312,8 @@ class StrideFrame(wx.Frame):
         super(StrideFrame, self).__init__(*args, **kw, size=(1200, 800))  # Set the window size here
         self.dataframes = dataframes
         self.acc_var_names = acc_var_names  # Ensure this is set
+        self.original_dataframes = [df.copy() for df in dataframes]  # Store original data
+        self.current_scale = 1.0  # Current scale factor
         self.InitUI()
 
     def InitUI(self):
@@ -322,18 +329,44 @@ class StrideFrame(wx.Frame):
 
         self.plot_graphs()
 
+        # Create a horizontal box sizer for the back button and the slider
+        hbox = wx.BoxSizer(wx.HORIZONTAL)
+
         back_btn = wx.Button(panel, label='Back', size=(150, 50))
         back_btn.SetFont(wx.Font(20, wx.DEFAULT, wx.NORMAL, wx.BOLD))
         back_btn.SetBackgroundColour(wx.Colour(230, 230, 250))
         back_btn.Bind(wx.EVT_BUTTON, self.on_back)
 
-        vbox.Add(back_btn, 0, wx.ALIGN_CENTER | wx.TOP | wx.BOTTOM, 20)
+        # Add the back button to the horizontal box sizer
+        hbox.Add(back_btn, 0, wx.ALIGN_CENTER | wx.TOP | wx.BOTTOM, 20)
+
+        # Create a vertical box sizer for the slider and its label
+        vbox_slider = wx.BoxSizer(wx.VERTICAL)
+
+        # Add the label above the slider
+        label = wx.StaticText(panel, label="Scale Factor")
+        label.SetFont(wx.Font(12, wx.DEFAULT, wx.NORMAL, wx.NORMAL))
+        vbox_slider.Add(label, 0, wx.ALIGN_CENTER | wx.TOP | wx.BOTTOM, 5)
+
+        # Create a slider
+        slider = wx.Slider(panel, value=0, minValue=-5, maxValue=5, size=(250, -1),
+                           style=wx.SL_HORIZONTAL | wx.SL_LABELS)
+        slider.Bind(wx.EVT_SLIDER, self.on_slider_change)
+
+        # Add the slider to the vertical box sizer
+        vbox_slider.Add(slider, 0, wx.ALIGN_CENTER | wx.TOP | wx.BOTTOM, 5)
+
+        # Add the vertical box sizer to the horizontal box sizer
+        hbox.Add(vbox_slider, 0, wx.ALIGN_CENTER | wx.TOP | wx.BOTTOM, 20)
+
+        # Add the horizontal box sizer to the main vertical box sizer
+        vbox.Add(hbox, 0, wx.ALIGN_CENTER | wx.TOP | wx.BOTTOM, 20)
 
         panel.SetSizer(vbox)
         self.Centre()
 
     def plot_graphs(self):
-        colors = ['blue', 'red','dark green']
+        colors = ['blue', 'red', 'dark green']
 
         for i, (df, canvas) in enumerate(zip(self.dataframes, self.canvases)):
             graphics_list = []
@@ -347,13 +380,42 @@ class StrideFrame(wx.Frame):
                 line = wxplot.PolyLine(list(zip(x_data, y_data)), colour=colors[j % len(colors)], width=1)
                 graphics_list.append(line)
 
-            graphics = wxplot.PlotGraphics(graphics_list, title=f"Stride Frequency - Dataset {i+1}", xLabel="Index", yLabel="Acceleration")
+            graphics = wxplot.PlotGraphics(graphics_list, title=f"Stride Frequency - Dataset {i + 1}", xLabel="Index", yLabel="Acceleration")
             canvas.Draw(graphics)
+
+    def update_top_graph(self, scale_factor):
+        df = self.original_dataframes[0].copy()
+        x_data = df.index.values
+        scaled_x_data = x_data / scale_factor
+
+        canvas = self.canvases[0]
+        graphics_list = [] 
+        colors = ['blue', 'red', 'dark green']
+
+        for j, var_name in enumerate(self.acc_var_names):
+            y_data = df[var_name].values
+
+            if len(scaled_x_data) != len(y_data):
+                raise ValueError(f"Data length mismatch: scaled_x_data length is {len(scaled_x_data)}, y_data length is {len(y_data)}")
+
+            line = wxplot.PolyLine(list(zip(scaled_x_data, y_data)), colour=colors[j % len(colors)], width=1)
+            graphics_list.append(line)
+
+        graphics = wxplot.PlotGraphics(graphics_list, title=f"Stride Frequency - Dataset 1", xLabel="Index", yLabel="Acceleration")
+        canvas.Draw(graphics)
+
+    def on_slider_change(self, event):
+        slider = event.GetEventObject()
+        value = slider.GetValue()
+        scale_factor = 1 + value * 0.01  # Scale factor changes by 5% per slider step
+        self.update_top_graph(scale_factor)
 
     def on_back(self, event):
         self.Hide()
         main_frame = MainFrame(None, title="Sensor Data Analysis")
         main_frame.Show()
+
+
 
 
 class PowerFrame(wx.Frame):
@@ -493,13 +555,16 @@ class AngleFrame(wx.Frame):
     def plot_graph(self):
         # Plot acceleration graph
         angle_calculator = angleCalculator()
-        csv_file = "data/landmarks_2024-05-29_15-15-26.csv"
-        angles = angle_calculator.get_angle(csv_file, "chest", True)
+        file1, file2 = fileFinder(r'data/angle_data')
+        df_pelvis = load_data(file1)
+        df_pelvis_slow = load_data(file2)
+        angles1 = angle_calculator.get_angle(file1, "chest", True)
+        angles2 = angle_calculator.get_angle(file2, "chest", True)
 
+        acc_data1 = wxplot.PolyLine(angles1, colour='blue', legend='Run 1')
+        acc_data2 = wxplot.PolyLine(angles2, colour='red', legend='Run 2')
 
-        acc_data1 = wxplot.PolyLine(angles, colour='blue', legend='Run 1')
-
-        graphics = wxplot.PlotGraphics([acc_data1], "Acceleration Data", "Time", "Acceleration")
+        graphics = wxplot.PlotGraphics([acc_data1, acc_data2], "Acceleration Data", "Time", "Acceleration")
 
         self.figure.enableLegend = True
         self.canvas.Draw(graphics)
