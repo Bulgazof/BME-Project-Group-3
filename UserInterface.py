@@ -152,6 +152,7 @@ class MainFrame(wx.Frame):
             'Angle': 'Angle',
             'Acceleration': 'Acceleration',
             'Power step': power_step,
+            'Close Program': 'Close Program',
         }
 
         self.create_widgets(panel, top_sizer)
@@ -163,7 +164,7 @@ class MainFrame(wx.Frame):
 
     def create_widgets(self, panel, top_sizer):
         for label, value in self.values.items():
-            if label in ['Start Run','Stride Frequency', 'Power', 'Acceleration', 'Setup', 'Angle']:
+            if label in ['Start Run','Stride Frequency', 'Power', 'Acceleration', 'Setup', 'Angle', 'Close Program']:
                 display_label = f'{label}'
                 btn = wx.Button(panel, label=display_label, size=(150, 50))
                 btn.SetFont(wx.Font(20, wx.DEFAULT, wx.NORMAL, wx.BOLD))
@@ -180,6 +181,8 @@ class MainFrame(wx.Frame):
                     btn.Bind(wx.EVT_BUTTON, self.on_setup)
                 elif label == 'Angle':
                     btn.Bind(wx.EVT_BUTTON, self.on_angle)
+                elif label == 'Close Program':
+                    btn.Bind(wx.EVT_BUTTON, self.on_close)
 
                 self.original_sizer.Add(btn, 0, wx.EXPAND | wx.ALL, 10)
             else:
@@ -196,23 +199,28 @@ class MainFrame(wx.Frame):
             result = None
         dlg.Destroy()
         return result
-
+    def on_close(self):
+        pass
     def on_back(self):
         self.Hide()
         main_frame = MainFrame(None, title="Sensor Data Analysis")
-        main_frame.Show()
+        main_frame.Show() 
 
     def on_stride_frequency(self, event):
-        df_pelvis = load_data(r'../BME-Project-Group-3/data/pelvis_test.csv')
+        df_pelvis = load_data(r'../BME-Project-Group-3/data/pelvis.csv')
         df_pelvis_slow = load_data(r'../BME-Project-Group-3/data/pelvis_slow.csv')
 
         df_pelvis = calc_norm(df_pelvis, acc_var_names, 'norm')
         df_pelvis_slow = calc_norm(df_pelvis_slow, acc_var_names, 'norm')
 
-        plot_multiple_stack([df_pelvis, df_pelvis_slow], acc_var_names, 'Stride Frequency')
+        dataframes = process_data_for_plotting([df_pelvis, df_pelvis_slow], speed_var_names, acc_var_names, weight)
+
+        self.Hide()
+        power_frame = StrideFrame(None, title="Stride Data", dataframes=dataframes)
+        power_frame.Show()
 
     def on_power(self, event):
-        df_pelvis = load_data(r'../BME-Project-Group-3/data/pelvis_test.csv')
+        df_pelvis = load_data(r'../BME-Project-Group-3/data/pelvis.csv')
         df_pelvis_slow = load_data(r'../BME-Project-Group-3/data/pelvis_slow.csv')
 
         df_pelvis = calc_norm(df_pelvis, acc_var_names, 'norm')
@@ -225,7 +233,7 @@ class MainFrame(wx.Frame):
         power_frame.Show()
 
     def on_acceleration(self, event):
-        df_pelvis = load_data(r'../BME-Project-Group-3/data/pelvis_test.csv')
+        df_pelvis = load_data(r'../BME-Project-Group-3/data/pelvis.csv')
         df_pelvis_slow = load_data(r'../BME-Project-Group-3/data/pelvis_slow.csv')
 
         df_pelvis = calc_norm(df_pelvis, acc_var_names, 'norm')
