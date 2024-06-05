@@ -391,7 +391,7 @@ class StrideFrame(wx.Frame):
         scaled_x_data = x_data / scale_factor
 
         canvas = self.canvases[0]
-        graphics_list = []
+        graphics_list = [] 
         colors = ['blue', 'red', 'dark green']
 
         for j, var_name in enumerate(self.acc_var_names):
