@@ -557,7 +557,7 @@ class AngleFrame(wx.Frame):
         self.Centre()
 
     def plot_graph(self):
-        # Plot acceleration graph 
+        # Plot acceleration graph
         angle_calculator = angleCalculator()
         file1, file2 = fileFinder(r'../BME-Project-Group-3/data/Angle')
         df_pelvis = load_data(file1)
