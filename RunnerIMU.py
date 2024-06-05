@@ -5,6 +5,7 @@ from CreaTeBME import SensorManager
 import time
 from datetime import datetime
 import threading
+import sys
 
 class RunnerIMU:
     FREQUENCY = 60
@@ -87,6 +88,10 @@ class RunnerIMU:
             self.running = True
             self.run_analysis()
 
+    def close(self):
+        self.manager.stop()
+        sys.exit()
+
     def listen_to_queue(self):
         while True:
             command = global_queue.get()
@@ -102,6 +107,9 @@ class RunnerIMU:
             elif command == "START_IMU_RECORD" and self.sensors_connected:
                 print("Got Record in IMU")
                 self.record()
+            elif command == "IMU_CLOSE" and self.sensors_connected:
+                print("Got Close in IMU")
+                self.close()
             else:
                 global_queue.put(command)
                 time.sleep(0.1)  # This should be outside the else block to avoid starvation
