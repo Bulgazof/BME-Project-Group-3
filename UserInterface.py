@@ -10,6 +10,7 @@ from scipy.integrate import simps
 from oskars_helper_functions import plot_angles
 from oskars_helper_functions import fileFinder
 from angleCalculator import angleCalculator
+import sys
 
 sampling_frequency = 60  # Hz
 var_names = ['acc_x', 'acc_y', 'acc_z', 'gyr_x', 'gyr_y', 'gyr_z', 'timestamp']  # Initiate variable names
@@ -200,8 +201,9 @@ class MainFrame(wx.Frame):
             result = None
         dlg.Destroy()
         return result
-    def on_close(self):
-        pass
+    def on_close(self, event):
+        self.Close()
+
     def on_back(self):
         self.Hide()
         main_frame = MainFrame(None, title="Sensor Data Analysis")
