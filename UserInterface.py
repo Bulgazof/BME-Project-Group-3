@@ -204,7 +204,7 @@ class MainFrame(wx.Frame):
     def on_back(self):
         self.Hide()
         main_frame = MainFrame(None, title="Sensor Data Analysis")
-        main_frame.Show() 
+        main_frame.Show()
 
     def on_stride_frequency(self, event):
         df_pelvis = load_data(r'../BME-Project-Group-3/data/pelvis.csv')
@@ -216,7 +216,8 @@ class MainFrame(wx.Frame):
         dataframes = process_data_for_plotting([df_pelvis, df_pelvis_slow], speed_var_names, acc_var_names, weight)
 
         self.Hide()
-        power_frame = StrideFrame(None, title="Stride Data", dataframes=dataframes)
+        power_frame = StrideFrame(None, title="Stride Data", dataframes=dataframes,
+                                  acc_var_names=acc_var_names)  # Pass acc_var_names here
         power_frame.Show()
 
     def on_power(self, event):
@@ -280,13 +281,6 @@ class MainFrame(wx.Frame):
         angle_frame = AngleFrame(None, title="Angle")
         angle_frame.Show()
 
-
-
-
-
-
-
-
 class StartFrame(wx.Frame):
     def __init__(self, *args, **kw):
         super(StartFrame, self).__init__(*args, **kw, size=(1200, 800))
@@ -313,7 +307,7 @@ class StrideFrame(wx.Frame):
     def __init__(self, *args, dataframes=None, acc_var_names=None, **kw):
         super(StrideFrame, self).__init__(*args, **kw, size=(1200, 800))  # Set the window size here
         self.dataframes = dataframes
-        self.acc_var_names = acc_var_names
+        self.acc_var_names = acc_var_names  # Ensure this is set
         self.InitUI()
 
     def InitUI(self):
