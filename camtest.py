@@ -9,6 +9,7 @@ from angleCalculator import angleCalculator
 from AudioFiles import TonePlayer
 import threading
 import queue
+import sys
 
 class Camera:
     def __init__(self):
@@ -30,6 +31,7 @@ class Camera:
         self.mp_pose = mp.solutions.pose
 
         self.cap = cv2.VideoCapture(0)
+        # self.cap.set(cv2.CAP_, 1)
 
         # Initialize angle calculator
         self.angle_calculator = angleCalculator()
@@ -171,6 +173,7 @@ class Camera:
         self.cap.release()
         self.output_video.release()
         cv2.destroyAllWindows()
+        sys.exit()
 
     def wait_for_setup(self):
         while True:
@@ -180,6 +183,9 @@ class Camera:
                 self.setup()
             elif command == "STOP_CAMERA_SETUP":
                 print("Got Stop Setup in Camera")
+            elif command == "CAMERA_CLOSE":
+                print("Got Close in Camera")
+                self.cleanup()
             else:
                 global_queue.put(command)
                 time.sleep(0.1)
@@ -212,3 +218,4 @@ def camera_start(queue):
     camera_recording_thread.start()
     print("Camera recording thread started")
     print("Camera initialization complete")
+    camera_setup_thread.join()

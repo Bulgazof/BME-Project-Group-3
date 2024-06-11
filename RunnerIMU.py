@@ -5,6 +5,7 @@ from CreaTeBME import SensorManager
 import time
 from datetime import datetime
 import threading
+import sys
 
 class RunnerIMU:
     FREQUENCY = 60
@@ -59,12 +60,20 @@ class RunnerIMU:
 
     def save_to_csv(self, sensor_name, file_path, peaks):
         if len(peaks) > 0:
-            desired_peak = peaks[self.step_num]
+            if len(peaks) >= self.step_num:
+                desired_peak = peaks[self.step_num]
+                print("Found enough peaks")
+            else:
+                desired_peak = peaks[-1]
+                print("Found peaks but not enough")
             num_rows_to_save = int(desired_peak * self.FREQUENCY)
         else:
+            print("Didn't find peaks")
             num_rows_to_save = len(self.data)
+            print(f"saving {num_rows_to_save} rows")
         with open(file_path, mode='w', newline='') as file:
             writer = csv.writer(file)
+            print("Saving IMU data to CSV...")
             for row in self.data[sensor_name][:num_rows_to_save]:
                 writer.writerow(row)
 
@@ -74,10 +83,12 @@ class RunnerIMU:
             return
         self.update_measurements()
         pelvis_y_accel = self.acc[self.SENSORS_NAMES[0]][:, 1]
-        peaks = self.detect_peaks(pelvis_y_accel, self.t_stamp[self.SENSORS_NAMES[0]], 3, 10)
-
+        threshold = max(pelvis_y_accel) - (max(pelvis_y_accel) * 0.6)
+        print(f"Threshold: {threshold}")
+        peaks = self.detect_peaks(pelvis_y_accel, self.t_stamp[self.SENSORS_NAMES[0]], threshold, 10)
         print("Updating measurements and saving to CSV...")
-        self.save_to_csv('F30E', f'data/IMU_data/{self.current_time}_tibia.csv', peaks)
+        self.save_to_csv('0FD6', f'data/IMU_data/{self.current_time}_pelvis.csv', peaks)
+        print("Saved IMU data")
         self.running = False  # Stop the function after updating and saving
 
     def record(self):
@@ -87,6 +98,10 @@ class RunnerIMU:
             self.running = True
             self.current_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
             self.run_analysis()
+
+    def close(self):
+        self.manager.stop()
+        sys.exit()
 
     def listen_to_queue(self):
         while True:
@@ -103,6 +118,9 @@ class RunnerIMU:
             elif command == "START_IMU_RECORD" and self.sensors_connected:
                 print("Got Record in IMU")
                 self.record()
+            elif command == "IMU_CLOSE" and self.sensors_connected:
+                print("Got Close in IMU")
+                self.close()
             else:
                 global_queue.put(command)
                 time.sleep(0.1)  # This should be outside the else block to avoid starvation
@@ -110,7 +128,7 @@ class RunnerIMU:
 def start_IMU(queue):
     global global_queue
     global_queue = queue
-    frame = RunnerIMU('F30E', 5, 10)
+    frame = RunnerIMU('0FD6', 5, 10)
     imu_thread = threading.Thread(target=frame.listen_to_queue)
     imu_thread.start()
     print("IMU thread started")

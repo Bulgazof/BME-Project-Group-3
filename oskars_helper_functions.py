@@ -1,8 +1,8 @@
 import matplotlib.pyplot as plt
-import pandas as pd
-from angleCalculator import angleCalculator
 import os
 from datetime import datetime
+import pandas as pd
+from angleCalculator import angleCalculator
 def plot_angles(*angles, labels=None, title="Angles Over Time", xlabel="Time", ylabel="Angle (radians)"):
     """
     Plot given angles in the same diagram.
@@ -28,11 +28,11 @@ def plot_angles(*angles, labels=None, title="Angles Over Time", xlabel="Time", y
     plt.grid(True)
     plt.show()
 
-def fileFinder(self):
+def fileFinder(path):
     try:
-        files = os.listdir(self.path)
+        files = os.listdir(path)
         # Filter out non-file entries (like directories)
-        files = [f for f in files if os.path.isfile(os.path.join(self.path, f))]
+        files = [f for f in files if os.path.isfile(os.path.join(path, f))]
 
         def extract_datetime(filename):
             timestamp_str = filename[:19]  # Extract yyyy-mm-dd-hh-mm-ss
@@ -41,10 +41,10 @@ def fileFinder(self):
         sorted_files = sorted(files, key=extract_datetime, reverse=True)
         print(sorted_files[0])
         # Return the full path of the most recent file
-        return os.path.join(self.path, sorted_files[0]), os.path.join(self.path, sorted_files[1])
+        return os.path.join(path, sorted_files[0]), os.path.join(path, sorted_files[1])
 
     except Exception as e:
-        print(f"An error occurred: {e}")
+        print(f"An error occurred: {e}")
 
 # Example usage
 if __name__ == "__main__":
