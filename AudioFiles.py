@@ -24,7 +24,7 @@ class TonePlayer:
         self.base_pitch = base_pitch
         self.beep_triple = 0
         self.thread = None
-        self.path = "data/"
+        self.path = "data/IMU_data"
         self.data = self.fileFinder()
         self.detect_peaks()
         self.readying = True
@@ -85,7 +85,7 @@ class TonePlayer:
                 else:
                     time.sleep(0.001)
 
-    def start(self,scale):
+    def start(self,scale=1):
         """
         Threading version of the sound player
         """

@@ -101,6 +101,7 @@ class Camera:
 
     def run(self):
         print("run started")
+        self.player_1.start()
         # Setup file names for video and CSV outputs
         current_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         self.output_filename = f'data/video_data/{current_time}_recording.mp4'
