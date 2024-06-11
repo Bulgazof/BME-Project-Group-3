@@ -5,6 +5,7 @@ import pandas as pd
 from scipy.signal import find_peaks
 import threading
 import os
+import queue
 from datetime import datetime
 
 class TonePlayer:
@@ -26,7 +27,7 @@ class TonePlayer:
         self.path = "data/"
         self.data = self.fileFinder()
         self.detect_peaks()
-
+        self.readying = True
     def play_tone(self):
         """
         Generates and plays a sound based on the current step and base pitch.
@@ -40,38 +41,56 @@ class TonePlayer:
             sd.wait()  # Wait until the sound has finished playing
 
             self.last_play_time = time.time()
-            self.current_step += 1
+            if self.readying is not True:
+                self.current_step += 1
 
         except Exception as e:
             print(f"Error in play_tone: {e}")
 
-    def play_loop(self):
+    def play_loop(self, scale):
         """
-        Plays the tones at the interval requested
-        :return:
+        Plays the tones at the interval requested.
         """
         while True:
-            # The normal beeps for while leaning over
-            if self.current_step < len(self.step_interval):
-                elapsed_time = time.time() - self.last_play_time
-                if elapsed_time >= self.step_interval[self.current_step]:  # Index over one
+            current_time = time.time()
+            if self.readying:
+                # Normal beeps while leaning over
+                if current_time - self.last_play_time > 3:
+                    self.base_pitch = 440
                     self.play_tone()
-                else:
-                    time.sleep(0.01)
-            elif self.beep_triple < 3:
-                # Beeps thrice once out of the initial stage
-                self.base_pitch = 880
-                self.play_tone()
-                self.beep_triple += 1
+                    time.sleep(0.25)
+                    self.play_tone()
+                    time.sleep(0.25)
+                    self.base_pitch = 880
+                    self.play_tone()
+                    self.base_pitch = 440
+                    self.current_step = 0
+                    self.last_play_time = current_time  # Update last play time
+                    self.readying = False
             else:
-                time.sleep(0.01)
+                if self.current_step < len(self.step_interval):
+                    elapsed_time = current_time - self.last_play_time
+                    if elapsed_time >= self.step_interval[self.current_step]*scale:
+                        self.play_tone()
+                        self.last_play_time = current_time  # Update last play time
+                        print(self.current_step)
+                    else:
+                        time.sleep(0.001)
+                elif self.beep_triple < 3:
+                    # Beeps thrice once out of the initial stage
+                    self.base_pitch = 880
+                    self.play_tone()
+                    self.beep_triple += 1
+                    self.last_play_time = current_time  # Update last play time
+                else:
+                    time.sleep(0.001)
 
-    def start(self):
+    def start(self,scale):
         """
         Threading version of the sound player
         """
         if self.thread is None or not self.thread.is_alive():
-            self.thread = threading.Thread(target=self.play_loop)
+            self.thread = threading.Thread(target=self.play_loop, args=(scale,))
             self.thread.daemon = True  # Ensure the thread exits when the main program does
             self.thread.start()
 
@@ -103,7 +122,7 @@ class TonePlayer:
 
             def extract_datetime(filename):
                 timestamp_str = filename[:19]  # Extract yyyy-mm-dd-hh-mm-ss
-                return datetime.strptime(timestamp_str, "%Y-%m-%d-%H-%M-%S")
+                return datetime.strptime(timestamp_str, "%Y-%m-%d_%H-%M-%S")
 
             sorted_files = sorted(files, key=extract_datetime, reverse=True)
             print(sorted_files[0])

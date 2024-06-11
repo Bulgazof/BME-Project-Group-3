@@ -21,9 +21,8 @@ class Camera:
         self.prev_time = time.time()
         self.cum_frame_time = 0
         self.prev_frame_time = time.time()
-
         # Initialize tone player with frequency adjustments
-        self.player_1 = TonePlayer([2, 2, 2, 2, 2, 2, 2, 2, 2, 1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3], 440)
+        self.player_1 = TonePlayer(base_pitch=440)
 
         # Initialize MediaPipe pose components
         self.mp_drawing = mp.solutions.drawing_utils
@@ -112,7 +111,15 @@ class Camera:
         #TODO fix the live angle shower, see ui line 284 todo
 
         # Start the tone player
-        self.player_1.start()
+        command = global_queue.get()
+        if command[:5] == "Scale:":
+            print("Got Scaling")
+            scale = int(command[5:])
+            self.player_1.start(scale=scale,)
+        else:
+            global_queue.put(command)
+            time.sleep(0.1)
+
 
         # Setup MediaPipe Pose
         with self.mp_pose.Pose(model_complexity=1, min_detection_confidence=0.5, min_tracking_confidence=0.5) as pose:

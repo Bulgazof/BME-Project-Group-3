@@ -5,6 +5,7 @@ import pandas as pd
 from scipy.signal import find_peaks
 import threading
 import os
+import queue
 from datetime import datetime
 
 class TonePlayer:
@@ -12,11 +13,10 @@ class TonePlayer:
     This class is used for the generation of tones when the user is running, giving audio feedback.
     """
 
-    def __init__(self,scale = 1, base_pitch=440, sample_rate=44100):
+    def __init__(self, base_pitch=440, sample_rate=44100):
         """
         Initializes the TonePlayer with the desired sample rate.
         """
-        self.scale = scale
         self.sample_rate = sample_rate
         self.current_step = 0
         self.last_play_time = time.time()
@@ -47,7 +47,7 @@ class TonePlayer:
         except Exception as e:
             print(f"Error in play_tone: {e}")
 
-    def play_loop(self):
+    def play_loop(self, scale):
         """
         Plays the tones at the interval requested.
         """
@@ -70,7 +70,7 @@ class TonePlayer:
             else:
                 if self.current_step < len(self.step_interval):
                     elapsed_time = current_time - self.last_play_time
-                    if elapsed_time >= self.step_interval[self.current_step]:
+                    if elapsed_time >= self.step_interval[self.current_step]*scale:
                         self.play_tone()
                         self.last_play_time = current_time  # Update last play time
                         print(self.current_step)
@@ -85,12 +85,12 @@ class TonePlayer:
                 else:
                     time.sleep(0.001)
 
-    def start(self):
+    def start(self,scale):
         """
         Threading version of the sound player
         """
         if self.thread is None or not self.thread.is_alive():
-            self.thread = threading.Thread(target=self.play_loop)
+            self.thread = threading.Thread(target=self.play_loop, args=(scale,))
             self.thread.daemon = True  # Ensure the thread exits when the main program does
             self.thread.start()
 
@@ -112,7 +112,7 @@ class TonePlayer:
             print(distances)
         else:
             distances = self.data
-        self.step_interval = distances * self.scale
+        self.step_interval = distances
 
     def fileFinder(self):
         try:
@@ -122,7 +122,7 @@ class TonePlayer:
 
             def extract_datetime(filename):
                 timestamp_str = filename[:19]  # Extract yyyy-mm-dd-hh-mm-ss
-                return datetime.strptime(timestamp_str, "%Y-%m-%d-%H-%M-%S")
+                return datetime.strptime(timestamp_str, "%Y-%m-%d_%H-%M-%S")
 
             sorted_files = sorted(files, key=extract_datetime, reverse=True)
             print(sorted_files[0])
