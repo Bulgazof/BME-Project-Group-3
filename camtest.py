@@ -24,14 +24,15 @@ class Camera:
         self.prev_frame_time = time.time()
 
         # Initialize tone player with frequency adjustments
-        self.player_1 = TonePlayer([2, 2, 2, 2, 2, 2, 2, 2, 2, 1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3], 440)
+        self.player_1 = TonePlayer(base_pitch= 440)
 
         # Initialize MediaPipe pose components
         self.mp_drawing = mp.solutions.drawing_utils
         self.mp_drawing_styles = mp.solutions.drawing_styles
         self.mp_pose = mp.solutions.pose
 
-        self.cap = cv2.VideoCapture(1)
+        self.cap = cv2.VideoCapture(0)
+        # self.cap.set(cv2.CAP_, 1)
 
         # Initialize angle calculator
         self.angle_calculator = angleCalculator()

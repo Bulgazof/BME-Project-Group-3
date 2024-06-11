@@ -10,7 +10,7 @@ class TonePlayer:
     This class is used for the generation of tones when the user is running, giving audio feedback.
     """
 
-    def __init__(self,data, base_pitch = 440, sample_rate=44100):
+    def __init__(self,data = 'none', base_pitch = 440, sample_rate=44100):
         """
         Initializes the TonePlayer with the desired sample rate.
         """

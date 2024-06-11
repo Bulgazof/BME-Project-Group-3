@@ -87,7 +87,7 @@ class RunnerIMU:
         print(f"Threshold: {threshold}")
         peaks = self.detect_peaks(pelvis_y_accel, self.t_stamp[self.SENSORS_NAMES[0]], threshold, 10)
         print("Updating measurements and saving to CSV...")
-        self.save_to_csv('F30E', f'data/IMU_data/{self.current_time}_tibia.csv', peaks)
+        self.save_to_csv('0FD6', f'data/IMU_data/{self.current_time}_pelvis.csv', peaks)
         print("Saved IMU data")
         self.running = False  # Stop the function after updating and saving
 
@@ -128,7 +128,7 @@ class RunnerIMU:
 def start_IMU(queue):
     global global_queue
     global_queue = queue
-    frame = RunnerIMU('F30E', 5, 10)
+    frame = RunnerIMU('0FD6', 5, 10)
     imu_thread = threading.Thread(target=frame.listen_to_queue)
     imu_thread.start()
     print("IMU thread started")
