@@ -11,6 +11,8 @@ import threading
 import queue
 import sys
 
+VIDEOCAPTURE_NR = 0
+
 class Camera:
     def __init__(self):
         # Initialize time and frame counters
@@ -30,7 +32,7 @@ class Camera:
         self.mp_drawing_styles = mp.solutions.drawing_styles
         self.mp_pose = mp.solutions.pose
 
-        self.cap = cv2.VideoCapture(0)
+        self.cap = cv2.VideoCapture(VIDEOCAPTURE_NR)
         # self.cap.set(cv2.CAP_, 1)
 
         # Initialize angle calculator
@@ -111,22 +113,13 @@ class Camera:
         self.fourcc = cv2.VideoWriter_fourcc(*'mp4v')
         self.output_video = cv2.VideoWriter(self.output_filename, self.fourcc, 20.0, (640, 480))
 
-        #TODO fix the live angle shower, see ui line 284 todo
-
-        # Start the tone player
-        # command = global_queue.get()
-        # if command[:5] == "Scale:":
-        #     print("Got Scaling")
-        #     scale = int(command[5:])
-        #     self.player_1.start(scale=scale,)
-        # else:
-        #     global_queue.put(command)
-        #     time.sleep(0.1)
-
+        start_time = time.time()  # Add start time
+        if not self.cap.isOpened():
+            self.cap.open(VIDEOCAPTURE_NR)
 
         # Setup MediaPipe Pose
         with self.mp_pose.Pose(model_complexity=1, min_detection_confidence=0.5, min_tracking_confidence=0.5) as pose:
-            while self.cap.isOpened():
+            while self.cap.isOpened() and time.time() - start_time < 5:
                 success, image = self.cap.read()
                 if not success:
                     print("Ignoring empty camera frame.")
@@ -139,12 +132,14 @@ class Camera:
                     command = global_queue.get(False)
                     if command == "STOP_CAMERA_RECORDING":
                         print("Got Stop Recording in Camera")
+                        cv2.destroyAllWindows()
                         break
                     else:
                         global_queue.put(command)
                 except queue.Empty:
                     pass
         self.cleanup()
+        self.wait_for_record()
 
     def setup(self):
         # Initial setup to display camera feed
@@ -162,6 +157,8 @@ class Camera:
                 command = global_queue.get(False)
                 if command == "STOP_CAMERA_SETUP":
                     print("Got Stop Setup in Camera")
+                    cv2.destroyAllWindows()
+
                     break
                 else:
                     global_queue.put(command)
@@ -174,7 +171,6 @@ class Camera:
         self.cap.release()
         self.output_video.release()
         cv2.destroyAllWindows()
-        sys.exit()
 
     def wait_for_setup(self):
         while True:
@@ -184,6 +180,8 @@ class Camera:
                 self.setup()
             elif command == "STOP_CAMERA_SETUP":
                 print("Got Stop Setup in Camera")
+                # TODO add stop camera setup
+                cv2.destroyAllWindows()
             elif command == "CAMERA_CLOSE":
                 print("Got Close in Camera")
                 self.cleanup()

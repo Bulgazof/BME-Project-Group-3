@@ -25,7 +25,6 @@ class RunnerIMU:
 
     def init_sensors(self):
         '''
-
         :return: True when finished and connected. False when finished and not connected
         '''
         try:
@@ -78,18 +77,25 @@ class RunnerIMU:
                 writer.writerow(row)
 
     def run_analysis(self):
-        time.sleep(self.record_duration)
-        if not self.running:
-            return
-        self.update_measurements()
+        start_time = time.time()  # Add start time
+        while time.time() - start_time < self.record_duration:  # Run for the specified duration
+            if not self.running:
+                return
+            self.update_measurements()
+            time.sleep(1.0 / self.FREQUENCY)  # Sleep to maintain the frequency
+
         pelvis_y_accel = self.acc[self.SENSORS_NAMES[0]][:, 1]
-        threshold = max(pelvis_y_accel) - (max(pelvis_y_accel) * 0.6)
-        print(f"Threshold: {threshold}")
-        peaks = self.detect_peaks(pelvis_y_accel, self.t_stamp[self.SENSORS_NAMES[0]], threshold, 10)
-        print("Updating measurements and saving to CSV...")
-        self.save_to_csv('0FD6', f'data/IMU_data/{self.current_time}_pelvis.csv', peaks)
-        print("Saved IMU data")
-        self.running = False  # Stop the function after updating and saving
+
+        try:
+            threshold = max(pelvis_y_accel) - (max(pelvis_y_accel) * 0.6)
+            print(f"Threshold: {threshold}")
+            peaks = self.detect_peaks(pelvis_y_accel, self.t_stamp[self.SENSORS_NAMES[0]], threshold, 10)
+            print("Updating measurements and saving to CSV...")
+            self.save_to_csv('0FD6', f'data/IMU_data/{self.current_time}_pelvis.csv', peaks)
+            print("Saved IMU data")
+            self.running = False  # Stop the function after updating and saving
+        except Exception as e:
+            print(e)
 
     def record(self):
         if not self.running:

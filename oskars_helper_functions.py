@@ -44,7 +44,7 @@ def fileFinder(path):
         return os.path.join(path, sorted_files[0]), os.path.join(path, sorted_files[1])
 
     except Exception as e:
-        print(f"An error occurred: {e}")
+        print(f"An error occurred: {e}")
 
 # Example usage
 if __name__ == "__main__":

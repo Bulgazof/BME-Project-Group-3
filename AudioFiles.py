@@ -28,6 +28,7 @@ class TonePlayer:
         self.data = self.fileFinder()
         self.detect_peaks()
         self.readying = True
+
     def play_tone(self):
         """
         Generates and plays a sound based on the current step and base pitch.
@@ -111,7 +112,7 @@ class TonePlayer:
             distances = np.diff(peak_times)
             print(distances)
         else:
-            distances = self.data
+            distances = [1,1,1,1,1]
         self.step_interval = distances
 
     def fileFinder(self):

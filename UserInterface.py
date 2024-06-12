@@ -262,16 +262,16 @@ class MainFrame(wx.Frame):
                 self.setup = False
                 break
             else:
-                print(command)
+                print(f'got unknown command in UI: {command}')
                 global_queue.put(command)
                 time.sleep(0.1)
         self.on_back()
 
-    def on_start(self, event):
+    def on_start(self, event): # when starting run, this function is called
         self.Hide()
         start_frame = StartFrame(None, title="Start Run")
         global_queue.put("START_CAMERA_RECORD")
-        global_queue.put("START_IMU_RECORD")
+        # global_queue.put("START_IMU_RECORD")
         start_frame.Show()
     def on_angle(self, event):
         self.Hide()
@@ -286,24 +286,17 @@ class StartFrame(wx.Frame):
         panel = wx.Panel(self)
         vbox = wx.BoxSizer(wx.VERTICAL)
 
-        end_run_btn = wx.Button(panel, label="View Data", size=(150, 50))
-        end_run_btn.SetFont(wx.Font(20, wx.DEFAULT, wx.NORMAL, wx.BOLD))
-        end_run_btn.SetBackgroundColour(wx.Colour(250, 128, 114))
-        end_run_btn.Bind(wx.EVT_BUTTON, self.on_end_run)
+        view_data_btn = wx.Button(panel, label="View Data", size=(150, 50))
+        view_data_btn.SetFont(wx.Font(20, wx.DEFAULT, wx.NORMAL, wx.BOLD))
+        view_data_btn.SetBackgroundColour(wx.Colour(250, 128, 114))
+        view_data_btn.Bind(wx.EVT_BUTTON, self.on_view_data)
 
-        vbox.Add(end_run_btn, 0, wx.ALIGN_CENTER | wx.ALL, 5)
-        wx.CallAfter(self.show_steps_and_angle, panel)
         panel.SetSizer(vbox)
         self.Centre()
 
-
-    def show_steps_and_angle(self, panel):
-        self.debug_btn = wx.Button(panel, label=str(time.time()), size=(150, 50))
-        self.GetSizer().Add(self.debug_btn, 0, wx.ALIGN_CENTER | wx.ALL, 5)
-
-    def on_end_run(self, event):
+    def on_view_data(self, event):
         self.Hide()
-        global_queue.put("STOP_CAMERA_RECORDING")
+        # global_queue.put("STOP_CAMERA_RECORDING")
         main_frame = MainFrame(None, title="Sensor Data Analysis")
         main_frame.Show()
 
