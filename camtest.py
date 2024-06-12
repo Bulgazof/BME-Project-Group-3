@@ -114,14 +114,14 @@ class Camera:
         #TODO fix the live angle shower, see ui line 284 todo
 
         # Start the tone player
-        command = global_queue.get()
-        if command[:5] == "Scale:":
-            print("Got Scaling")
-            scale = int(command[5:])
-            self.player_1.start(scale=scale,)
-        else:
-            global_queue.put(command)
-            time.sleep(0.1)
+        # command = global_queue.get()
+        # if command[:5] == "Scale:":
+        #     print("Got Scaling")
+        #     scale = int(command[5:])
+        #     self.player_1.start(scale=scale,)
+        # else:
+        #     global_queue.put(command)
+        #     time.sleep(0.1)
 
 
         # Setup MediaPipe Pose
