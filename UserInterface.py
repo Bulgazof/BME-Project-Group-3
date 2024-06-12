@@ -559,6 +559,7 @@ class AngleFrame(wx.Frame):
 
         graphics = wxplot.PlotGraphics([acc_data1, acc_data2], "Acceleration Data", "Time", "Acceleration")
 
+        # TODO fix this drawing
         self.figure.enableLegend = True
         self.canvas.Draw(graphics)
 
