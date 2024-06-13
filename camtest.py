@@ -11,10 +11,8 @@ import threading
 import queue
 import sys
 
-VIDEOCAPTURE_NR = 0
-
 class Camera:
-    def __init__(self):
+    def __init__(self, CAMERA_NUMBER):
         # Initialize time and frame counters
         self.start_time = time.time()
         self.condition_met = False
@@ -32,7 +30,8 @@ class Camera:
         self.mp_drawing_styles = mp.solutions.drawing_styles
         self.mp_pose = mp.solutions.pose
 
-        self.cap = cv2.VideoCapture(VIDEOCAPTURE_NR)
+        self.CAMERA_NUMBER = CAMERA_NUMBER
+        self.cap = cv2.VideoCapture(CAMERA_NUMBER)
         # self.cap.set(cv2.CAP_, 1)
 
         # Initialize angle calculator
@@ -103,7 +102,10 @@ class Camera:
 
     def run(self):
         print("run started")
-        self.player_1.start()
+        if self.player_1.get_started():
+            self.player_1.play_loop()
+        else:
+            self.player_1.start()
         # Setup file names for video and CSV outputs
         current_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         self.output_filename = f'data/video_data/{current_time}_recording.mp4'
@@ -115,7 +117,7 @@ class Camera:
 
         start_time = time.time()  # Add start time
         if not self.cap.isOpened():
-            self.cap.open(VIDEOCAPTURE_NR)
+            self.cap.open(self.CAMERA_NUMBER)
 
         # Setup MediaPipe Pose
         with self.mp_pose.Pose(model_complexity=1, min_detection_confidence=0.5, min_tracking_confidence=0.5) as pose:
@@ -205,11 +207,11 @@ if __name__ == "__main__":
     cam1.setup()
     cam1.run()
 
-def camera_start(queue):
+def camera_start(queue, CAMERA_NUMBER):
     print("Initializing Camera...")
     global global_queue
     global_queue = queue
-    camera = Camera()
+    camera = Camera(CAMERA_NUMBER)
     camera_setup_thread = threading.Thread(target=camera.wait_for_setup)
     camera_setup_thread.start()
     print("Camera setup thread started")

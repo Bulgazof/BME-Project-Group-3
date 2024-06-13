@@ -6,6 +6,9 @@ from queue import Queue
 from RunnerIMU import start_IMU
 import os
 
+IMU_NUMBER = '0FD6'
+CAMERA_NUMBER = 0
+
 if __name__ == "__main__":
     big_queue = Queue(maxsize=0)
 
@@ -14,11 +17,11 @@ if __name__ == "__main__":
     ui_thread.start()
 
     # Start the camera thread
-    camera_thread = threading.Thread(target=camera_start, args=(big_queue, ))
+    camera_thread = threading.Thread(target=camera_start, args=(big_queue, CAMERA_NUMBER))
     camera_thread.start()
 
     # Start the IMU thread
-    imu_thread = threading.Thread(target=start_IMU, args=(big_queue,))
+    imu_thread = threading.Thread(target=start_IMU, args=(big_queue, IMU_NUMBER))
     imu_thread.start()
 
     ui_thread.join() # only stop main thread when ui thread stops.

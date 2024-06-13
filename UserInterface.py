@@ -11,6 +11,7 @@ from oskars_helper_functions import fileFinder
 from angleCalculator import angleCalculator
 import sys
 from queue import Empty
+import math
 
 sampling_frequency = 60  # Hz
 var_names = ['acc_x', 'acc_y', 'acc_z', 'gyr_x', 'gyr_y', 'gyr_z', 'timestamp']  # Initiate variable names
@@ -271,7 +272,7 @@ class MainFrame(wx.Frame):
         self.Hide()
         start_frame = StartFrame(None, title="Start Run")
         global_queue.put("START_CAMERA_RECORD")
-        # global_queue.put("START_IMU_RECORD")
+        global_queue.put("START_IMU_RECORD")
         start_frame.Show()
     def on_angle(self, event):
         self.Hide()
@@ -549,18 +550,21 @@ class AngleFrame(wx.Frame):
         # Plot acceleration graph
         angle_calculator = angleCalculator()
         file1, file2 = fileFinder(r'data/angle_data')
-        df_pelvis = load_data(file1)
-        df_pelvis_slow = load_data(file2)
-        angles1 = angle_calculator.get_angle(file1, "chest", True)
-        angles2 = angle_calculator.get_angle(file2, "chest", True)
+        angles1_rad = angle_calculator.get_angle(file1, "chest", True)
+        angles2_rad = angle_calculator.get_angle(file2, "chest", True)
 
-        acc_data1 = wxplot.PolyLine(angles1, colour='blue', legend='Run 1')
-        acc_data2 = wxplot.PolyLine(angles2, colour='red', legend='Run 2')
+        angles1_deg = [math.degrees(angle) for angle in angles1_rad]
+        angles2_deg = [math.degrees(angle) for angle in angles2_rad]
 
-        graphics = wxplot.PlotGraphics([acc_data1, acc_data2], "Acceleration Data", "Time", "Acceleration")
+        if not isinstance(angles1_rad, list) or not isinstance(angles2_rad, list):
+            raise ValueError("angles1 and angles2 should be lists of angles.")
 
-        # TODO fix this drawing
-        self.figure.enableLegend = True
+        acc_data1 = wxplot.PolyLine([(i, angle) for i, angle in enumerate(angles1_deg)], colour='blue', legend='Run 1')
+        acc_data2 = wxplot.PolyLine([(i, angle) for i, angle in enumerate(angles2_deg)], colour='red', legend='Run 2')
+
+        graphics = wxplot.PlotGraphics([acc_data1, acc_data2], "Angle Data", "Time (frames)", "Angle (degrees)")
+
+        # self.figure.enableLegend = True
         self.canvas.Draw(graphics)
 
     def on_back(self, event):

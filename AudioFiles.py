@@ -28,6 +28,7 @@ class TonePlayer:
         self.data = self.fileFinder()
         self.detect_peaks()
         self.readying = True
+        self.started = False
 
     def play_tone(self):
         """
@@ -48,11 +49,15 @@ class TonePlayer:
         except Exception as e:
             print(f"Error in play_tone: {e}")
 
-    def play_loop(self, scale):
+    def play_loop(self, scale = 1):
         """
         Plays the tones at the interval requested.
         """
-        while True:
+        playing = True
+        self.current_step = 0
+        self.last_play_time = time.time()
+        self.beep_triple = 0
+        while playing:
             current_time = time.time()
             if self.readying:
                 # Normal beeps while leaning over
@@ -74,7 +79,7 @@ class TonePlayer:
                     if elapsed_time >= self.step_interval[self.current_step]*scale:
                         self.play_tone()
                         self.last_play_time = current_time  # Update last play time
-                        print(self.current_step)
+                        # (self.current_step)
                     else:
                         time.sleep(0.001)
                 elif self.beep_triple < 3:
@@ -83,8 +88,13 @@ class TonePlayer:
                     self.play_tone()
                     self.beep_triple += 1
                     self.last_play_time = current_time  # Update last play time
+                elif self.beep_triple == 3:
+                    playing = False
                 else:
                     time.sleep(0.001)
+
+    def get_started(self):
+        return self.started
 
     def start(self,scale=1):
         """
@@ -94,6 +104,7 @@ class TonePlayer:
             self.thread = threading.Thread(target=self.play_loop, args=(scale,))
             self.thread.daemon = True  # Ensure the thread exits when the main program does
             self.thread.start()
+            self.started = True
 
     def detect_peaks(self, threshold=3, min_distance=5):
         """
