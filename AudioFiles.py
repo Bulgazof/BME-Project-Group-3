@@ -106,7 +106,7 @@ class TonePlayer:
             self.thread.start()
             self.started = True
 
-    def detect_peaks(self, threshold=3, min_distance=5):
+    def detect_peaks(self, threshold=2, min_distance=8):
         """
         Detect peaks and set step intervals.
         :param threshold: threshold to activate peak

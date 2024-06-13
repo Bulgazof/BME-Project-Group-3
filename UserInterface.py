@@ -441,8 +441,8 @@ class PowerFrame(wx.Frame):
         self.Centre()
 
     def plot_graph(self):
-        threshold = 4
-        min_distance = 10
+        threshold = 8
+        min_distance = 8
         window_size = 10
 
         data1 = [(row['timestamp'], row['power']) for _, row in self.dataframes[0].iterrows()]
