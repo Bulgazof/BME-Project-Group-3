@@ -18,7 +18,7 @@ class Camera:
         self.condition_met = False
         self.current_time = 0.0
         self.frame = 0
-        self.display_FPS = 0.5
+        self.display_FPS = 24
         self.prev_time = time.time()
         self.cum_frame_time = 0
         self.prev_frame_time = time.time()
@@ -135,15 +135,15 @@ class Camera:
                 if cv2.waitKey(5) & 0xFF == 27:
                     print(f"Average Frame Rate: {self.cum_frame_time / self.frame}")
                     break
-                try:
-                    command = global_queue.get(False)
-                    if command == "STOP_CAMERA_RECORDING":
-                        print("Got Stop Recording in Camera")
-                        break
-                    else:
-                        global_queue.put(command)
-                except queue.Empty:
-                    pass
+                # try:
+                #     command = global_queue.get(False)
+                #     if command == "STOP_CAMERA_RECORDING":
+                #         print("Got Stop Recording in Camera")
+                #         break
+                #     else:
+                #         global_queue.put(command)
+                # except queue.Empty:
+                #     pass
         self.cleanup()
 
     def setup(self):
@@ -156,17 +156,17 @@ class Camera:
             else:
                 cv2.imshow('Camera Setup Window', cv2.flip(image, 1))
                 if cv2.waitKey(5) & 0xFF == 27:
-                    global_queue.put("CAMERA_SETUP_FINISHED")
+                    # global_queue.put("CAMERA_SETUP_FINISHED")
                     break
-            try:
-                command = global_queue.get(False)
-                if command == "STOP_CAMERA_SETUP":
-                    print("Got Stop Setup in Camera")
-                    break
-                else:
-                    global_queue.put(command)
-            except queue.Empty:
-                pass
+            # try:
+            #     command = global_queue.get(False)
+            #     if command == "STOP_CAMERA_SETUP":
+            #         print("Got Stop Setup in Camera")
+            #         break
+            #     else:
+            #         global_queue.put(command)
+            # except queue.Empty:
+            #     pass
         cv2.destroyAllWindows()
 
     def cleanup(self):
